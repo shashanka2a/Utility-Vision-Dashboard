@@ -1,57 +1,91 @@
 "use client";
 
-import { ChevronDown, BarChart3, FileText, TrendingUp, FolderOpen, Users, Building2 } from "lucide-react";
+import {
+  LayoutDashboard, FolderOpen, Users, Building2,
+  BarChart3, FileText, TrendingUp, Eye, ChevronDown,
+  ChevronRight, Settings,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
-const projects = [
+// ─── Main nav items ────────────────────────────────────────────────────────────
+const MAIN_NAV = [
+  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, path: "/activity" },
+  { id: "projects",  label: "Projects",  icon: FolderOpen,      path: "/projects" },
+  { id: "directory", label: "Directory", icon: Users,            path: "/directory" },
+  { id: "company",   label: "Company",   icon: Building2,        path: "/company" },
+] as const;
+
+// ─── Dashboard sub-nav ─────────────────────────────────────────────────────────
+const DASHBOARD_SUB = [
+  {
+    label: "Activity",
+    icon: BarChart3,
+    path: "/activity",
+    children: null,
+  },
+  {
+    label: "Reports",
+    icon: FileText,
+    path: "/reports",
+    children: null,
+  },
+  {
+    label: "Insights",
+    icon: TrendingUp,
+    path: null,
+    children: [
+      { label: "Daily logs", path: "/daily-logs" },
+    ],
+  },
+];
+
+// ─── Static projects list (mock) ──────────────────────────────────────────────────
+const PROJECTS_LIST = [
   { id: "all", name: "All Projects" },
   { id: "storey-bend", name: "Storey Bend Wicking Project" },
   { id: "redlands", name: "Redlands Wicking Project" },
   { id: "oakwood", name: "Oakwood Infrastructure" },
 ];
 
-const navItems = [
-  { path: "/activity", icon: BarChart3, label: "Activity" },
-  { path: "/reports", icon: FileText, label: "Reports" },
-  { path: "/daily-logs", icon: TrendingUp, label: "Daily logs" },
-  { path: "/projects", icon: FolderOpen, label: "Projects" },
-  { path: "/directory", icon: Users, label: "Directory" },
-  { path: "/company", icon: Building2, label: "Company" },
-] as const;
 
-export function Sidebar() {
-  const pathname = usePathname();
+// ─── Which main-nav section is active ─────────────────────────────────────────
+function getActiveSection(pathname: string) {
+  if (["/activity", "/reports", "/daily-logs", "/live-views"].some(p => pathname.startsWith(p))) return "dashboard";
+  if (pathname.startsWith("/projects"))  return "projects";
+  if (pathname.startsWith("/directory")) return "directory";
+  if (pathname.startsWith("/company"))   return "company";
+  return "dashboard";
+}
+
+// ─── Dashboard sub-nav panel ───────────────────────────────────────────────────
+function DashboardSubNav({ pathname }: { pathname: string }) {
+  const [insightsOpen, setInsightsOpen] = useState(
+    pathname.startsWith("/daily-logs")
+  );
   const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState("all");
 
-  const selectedProjectName = projects.find((p) => p.id === selectedProject)?.name ?? "Select project";
+  const selectedProjectName = PROJECTS_LIST.find((p) => p.id === selectedProject)?.name ?? "Select project";
 
   return (
-    <aside className="w-60 bg-gray-900 text-white flex flex-col">
-      <div className="h-16 flex items-center px-4 border-b border-gray-700">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-[#FF6633] rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-sm">UV</span>
-          </div>
-          <span className="font-semibold">Utility Vision</span>
-        </Link>
-      </div>
-
-      <div className="px-3 py-4 border-b border-gray-700">
+    <div className="w-56 bg-white border-r border-gray-200 flex flex-col">
+      {/* Project Selector (Top of white panel) */}
+      <div className="p-4 border-b border-gray-100 mb-2">
         <div className="relative">
           <button
             type="button"
             onClick={() => setIsProjectDropdownOpen(!isProjectDropdownOpen)}
-            className="w-full bg-black hover:bg-gray-700 px-3 py-2 rounded text-sm text-left flex items-center justify-between transition-colors"
+            className="w-full bg-white border border-gray-200 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm text-left flex items-center justify-between transition-colors focus:outline-none focus:ring-2 focus:ring-[#FF6633]/20"
           >
-            <span className="text-gray-300 truncate">{selectedProjectName}</span>
-            <ChevronDown className="w-4 h-4 text-gray-500 flex-shrink-0" />
+            <span className="text-gray-700 truncate font-medium">{selectedProjectName}</span>
+            <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0 ml-2" />
           </button>
+          
           {isProjectDropdownOpen && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-black rounded shadow-lg z-10 border border-gray-700">
-              {projects.map((project) => (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-lg z-20 border border-gray-100 py-1 max-h-[300px] overflow-y-auto">
+              {PROJECTS_LIST.map((project) => (
                 <button
                   key={project.id}
                   type="button"
@@ -59,7 +93,9 @@ export function Sidebar() {
                     setSelectedProject(project.id);
                     setIsProjectDropdownOpen(false);
                   }}
-                  className="w-full px-3 py-2 text-sm text-left hover:bg-gray-700 text-gray-300 transition-colors"
+                  className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition-colors ${
+                    selectedProject === project.id ? 'text-[#FF6633] font-medium bg-orange-50/50' : 'text-gray-600'
+                  }`}
                 >
                   {project.name}
                 </button>
@@ -69,22 +105,123 @@ export function Sidebar() {
         </div>
       </div>
 
-      <nav className="flex-1 py-4">
-        {navItems.map(({ path, icon: Icon, label }) => (
-          <Link
-            key={path}
-            href={path}
-            className={`w-full flex items-center gap-3 px-4 py-2.5 transition-colors ${
-              pathname === path
-                ? "bg-black text-white border-l-2 border-[#FF6633]"
-                : "text-gray-500 hover:bg-gray-700 hover:text-gray-300"
-            }`}
-          >
-            <Icon className="w-5 h-5" />
-            <span className="flex-1 text-left text-sm">{label}</span>
-          </Link>
-        ))}
-      </nav>
+      {/* Nav Items */}
+      <div className="flex-1 overflow-y-auto w-full px-2">
+        {DASHBOARD_SUB.map((item) => {
+          if (item.children) {
+            // Expandable group (Insights)
+            const anyChildActive = item.children.some(c => pathname.startsWith(c.path));
+            return (
+              <div key={item.label} className="mb-0.5">
+                <button
+                  onClick={() => setInsightsOpen(o => !o)}
+                  className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors focus:outline-none ${
+                    anyChildActive
+                      ? "text-gray-900 font-medium"
+                      : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                  }`}
+                >
+                  <item.icon className="w-4 h-4 flex-shrink-0" />
+                  <span className="flex-1 text-left">{item.label}</span>
+                  {insightsOpen
+                    ? <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
+                    : <ChevronRight className="w-3.5 h-3.5 text-gray-400" />}
+                </button>
+                {insightsOpen && (
+                  <div className="pl-10 pb-1 mt-0.5 space-y-0.5">
+                    {item.children.map(child => (
+                      <Link
+                        key={child.path}
+                        href={child.path}
+                        className={`block py-2 pr-3 pl-2 text-sm rounded-lg transition-colors ${
+                          pathname.startsWith(child.path)
+                            ? "text-blue-600 font-medium bg-blue-50/50"
+                            : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+                        }`}
+                      >
+                        {child.label}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          }
+
+          // Regular item
+          const isActive = item.path && pathname.startsWith(item.path);
+          return (
+            <Link
+              key={item.label}
+              href={item.path ?? "#"}
+              className={`flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors mb-0.5 focus:outline-none ${
+                isActive
+                  ? "text-blue-600 font-semibold bg-blue-50/50"
+                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+              }`}
+            >
+              <item.icon className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-blue-600" : ""}`} />
+              <span>{item.label}</span>
+            </Link>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Sidebar ──────────────────────────────────────────────────────────────
+export function Sidebar() {
+  const pathname = usePathname();
+  const activeSection = getActiveSection(pathname);
+
+  return (
+    <aside className="flex h-full flex-shrink-0">
+      {/* ── Icon rail ── */}
+      <div className="w-[72px] bg-gray-900 flex flex-col items-center py-3 gap-1">
+        {/* Logo */}
+        <div className="w-10 h-10 bg-[#FF6633] rounded-xl flex items-center justify-center mb-3 flex-shrink-0">
+          <span className="text-white font-bold text-sm">UV</span>
+        </div>
+
+        {MAIN_NAV.map(({ id, label, icon: Icon, path }) => {
+          const isActive = activeSection === id;
+          return (
+            <Link
+              key={id}
+              href={path}
+              title={label}
+              className={`flex flex-col items-center gap-1 w-14 py-2.5 rounded-xl transition-all ${
+                isActive
+                  ? "bg-gray-700 text-white"
+                  : "text-gray-500 hover:bg-gray-800 hover:text-gray-300"
+              }`}
+            >
+              <Icon className="w-5 h-5" />
+              <span className="text-[10px] font-medium leading-none">{label}</span>
+            </Link>
+          );
+        })}
+
+        {/* Spacer + Settings at bottom */}
+        <div className="flex-1" />
+        <Link
+          href="/company"
+          title="Settings"
+          className="flex flex-col items-center gap-1 w-14 py-2.5 rounded-xl text-gray-500 hover:bg-gray-800 hover:text-gray-300 transition-all mb-1"
+        >
+          <Settings className="w-5 h-5" />
+        </Link>
+        {/* User avatar placeholder */}
+        <div className="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center mb-1">
+          <span className="text-white text-xs font-medium">U</span>
+        </div>
+      </div>
+
+      {/* ── Sub-nav panel (only for Dashboard section) ── */}
+      {activeSection === "dashboard" && (
+        <DashboardSubNav pathname={pathname} />
+      )}
     </aside>
   );
 }

@@ -22,49 +22,39 @@ export function ActivityCard({ activity }: ActivityCardProps) {
       {/* Clickable Header */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full p-4 text-left hover:bg-gray-50 transition-colors focus:outline-none"
+        className="w-full p-5 sm:p-6 text-left hover:bg-gray-50 transition-colors focus:outline-none"
         aria-expanded={isExpanded}
         aria-controls={`activity-details-${activity.id}`}
       >
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex-1 min-w-0">
-            {/* Main Info */}
-            <div className="flex items-start gap-3 mb-2">
-              <div className="w-9 h-9 bg-gradient-to-br from-[#FF6633] to-[#E55A2B] rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
-                {activity.employeeName.split(' ').map(n => n[0]).join('')}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-gray-900 leading-normal">
-                  <span className="font-semibold">{activity.employeeName}</span>
-                  {' '}{activity.action}{' '}
-                  <span className="font-medium">{activity.project}</span>
-                </p>
-                <div className="flex items-center gap-1 mt-1.5 text-xs text-gray-500">
-                  <Calendar className="w-3.5 h-3.5" />
-                  <span>{activity.timestamp}</span>
-                </div>
-              </div>
-            </div>
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+          <div className="flex items-start gap-4 flex-1 min-w-0">
+            <div className="flex-1 min-w-0 flex flex-col pt-0.5">
+              {/* Main Info */}
+              <p className="text-[15px] text-gray-800 leading-snug">
+                <span className="font-semibold text-gray-900">{activity.employeeName}</span>
+                {' '}{activity.action.replace(' in', '')} in{' '}
+                <span className="text-gray-800">{activity.project}</span>
+              </p>
 
-            {/* Highlighted Metrics Preview */}
-            {activity.metrics.filter(m => m.highlight).map((metric, index) => (
-              <div key={index} className="mt-3 pl-12">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-xs text-gray-500 uppercase font-medium">{metric.label}</span>
-                  <span className="text-2xl font-bold text-[#FF6633]">{metric.value}</span>
-                  <span className="text-sm text-gray-700">{metric.unit}</span>
-                  {metric.id && (
-                    <span className="text-xs text-gray-400 ml-auto">{metric.id}</span>
-                  )}
-                </div>
+              <div className="flex items-center gap-1.5 mt-1 text-sm text-gray-500">
+                <span>{activity.timestamp}</span>
               </div>
-            ))}
+
+              {/* Highlighted Metrics Preview */}
+              {activity.metrics.filter(m => m.highlight).map((metric, index) => (
+                <div key={index} className="mt-5 flex items-baseline gap-1.5 pb-1">
+                  <span className="text-[15px] text-gray-700 uppercase">{metric.label} |</span>
+                  <span className="text-[15px] font-medium text-[#2196F3]">{metric.value}</span>
+                  <span className="text-[15px] text-gray-700">{metric.unit}</span>
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* Expand Icon */}
-          <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Expand Icon & Badges */}
+          <div className="flex items-center gap-3 flex-shrink-0 pt-0.5">
             {activity.photos.length > 0 && (
-              <span className="text-xs text-gray-500 px-2 py-1 bg-gray-100 rounded">
+              <span className="text-xs font-medium text-gray-500 px-2.5 py-1 bg-gray-100 rounded flex items-center gap-1.5">
                 {activity.photos.length} {activity.photos.length === 1 ? 'photo' : 'photos'}
               </span>
             )}
@@ -72,7 +62,6 @@ export function ActivityCard({ activity }: ActivityCardProps) {
               className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${
                 isExpanded ? 'rotate-180' : ''
               }`}
-              aria-hidden="true"
             />
           </div>
         </div>

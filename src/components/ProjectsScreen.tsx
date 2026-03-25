@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock, Plus, Pencil, Trash2, X, Loader2, Search } from "lucide-react";
+import { Clock, Plus, Pencil, Trash2, X, Loader2, Search, LayoutGrid, List } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 
 interface Project {
@@ -65,6 +65,7 @@ export function ProjectsScreen() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [formData, setFormData] = useState<FormData>(emptyForm);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   const fetchProjects = useCallback(async () => {
     setLoading(true);
@@ -167,13 +168,38 @@ export function ProjectsScreen() {
               <span className="font-medium text-[#4CAF50]">{activeCount} active</span>
             </p>
           </div>
-          <button
-            onClick={openAdd}
-            className="flex items-center gap-2 px-4 py-2.5 bg-[#FF6633] text-white rounded-lg font-medium hover:bg-[#E55A2B] transition-all shadow-sm hover:shadow focus:outline-none focus:ring-2 focus:ring-[#FF6633] focus:ring-offset-2"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Project</span>
-          </button>
+          <div className="flex items-center gap-2">
+            {/* View toggle */}
+            <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-2 transition-colors focus:outline-none ${
+                  viewMode === 'grid' ? 'bg-gray-100 text-gray-900' : 'text-gray-400 hover:bg-gray-50'
+                }`}
+                aria-label="Grid view"
+                title="Grid view"
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-2 transition-colors focus:outline-none ${
+                  viewMode === 'list' ? 'bg-gray-100 text-gray-900' : 'text-gray-400 hover:bg-gray-50'
+                }`}
+                aria-label="List view"
+                title="List view"
+              >
+                <List className="w-4 h-4" />
+              </button>
+            </div>
+            <button
+              onClick={openAdd}
+              className="flex items-center gap-2 px-4 py-2.5 bg-[#FF6633] text-white rounded-lg font-medium hover:bg-[#E55A2B] transition-all shadow-sm hover:shadow focus:outline-none focus:ring-2 focus:ring-[#FF6633] focus:ring-offset-2"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Project</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -194,69 +220,120 @@ export function ProjectsScreen() {
             <p className="text-sm">Click &ldquo;Add Project&rdquo; to create your first one.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 content-start">
-            {projects.map(project => (
-              <div
-                key={project.id}
-                className="bg-white border border-gray-300 rounded-lg p-5 hover:shadow-lg transition-all duration-200"
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-black text-base truncate">{project.name}</h3>
-                    <p className="text-sm text-gray-500 mt-0.5">{project.job_number}</p>
-                    {(project.city || project.state) && (
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        {[project.city, project.state].filter(Boolean).join(', ')}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 ml-2 flex-shrink-0">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      project.status === 'active'    ? 'bg-[#E8F5E9] text-[#4CAF50]' :
-                      project.status === 'paused'    ? 'bg-[#FFF8E1] text-[#FFC107]' :
+          viewMode === 'grid' ? (
+            /* ── GRID VIEW ── */
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 content-start">
+              {projects.map(project => (
+                <div
+                  key={project.id}
+                  className="bg-white border border-gray-300 rounded-lg p-5 hover:shadow-lg transition-all duration-200"
+                >
+                  {/* Top row: name + status + date + actions */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-black text-base truncate">{project.name}</h3>
+                      <p className="text-sm text-gray-500 mt-0.5">{project.job_number}</p>
+                      {(project.city || project.state) && (
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          {[project.city, project.state].filter(Boolean).join(', ')}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      {/* Status badge */}
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        project.status === 'active'  ? 'bg-[#E8F5E9] text-[#4CAF50]' :
+                        project.status === 'paused'  ? 'bg-[#FFF8E1] text-[#FFC107]' :
                                                        'bg-gray-100 text-gray-700'
-                    }`}>
-                      {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
-                    </span>
-                    <button
-                      onClick={() => openEdit(project)}
-                      className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-[#FF6633]"
-                      aria-label={`Edit ${project.name}`}
-                    >
-                      <Pencil className="w-4 h-4 text-gray-600" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(project.id)}
-                      className="p-1.5 hover:bg-[#FFEBEE] rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-[#F44336]"
-                      aria-label={`Delete ${project.name}`}
-                    >
-                      <Trash2 className="w-4 h-4 text-[#F44336]" />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-100">
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1 font-medium">Acres Completed</p>
-                    <p className="text-xl font-bold text-[#FF6633]">{project.acres_completed}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1 font-medium">
-                      {project.start_date ? 'Start Date' : 'Last Activity'}
-                    </p>
-                    <div className="flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5 text-gray-500" />
-                      <p className="text-sm text-gray-700">
-                        {project.start_date
-                          ? new Date(project.start_date).toLocaleDateString()
-                          : (project.last_activity ?? '—')}
-                      </p>
+                      }`}>
+                        {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
+                      </span>
+                      {/* Start date inline */}
+                      {project.start_date && (
+                        <span className="flex items-center gap-1 text-xs text-gray-500">
+                          <Clock className="w-3 h-3" />
+                          {new Date(project.start_date).toLocaleDateString()}
+                        </span>
+                      )}
+                      <button
+                        onClick={() => openEdit(project)}
+                        className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none"
+                        aria-label={`Edit ${project.name}`}
+                      >
+                        <Pencil className="w-3.5 h-3.5 text-gray-500" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(project.id)}
+                        className="p-1.5 hover:bg-[#FFEBEE] rounded-lg transition-colors focus:outline-none"
+                        aria-label={`Delete ${project.name}`}
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-[#F44336]" />
+                      </button>
                     </div>
                   </div>
                 </div>
+              ))}
+            </div>
+          ) : (
+            /* ── LIST VIEW ── */
+            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+              {/* Table header */}
+              <div className="grid grid-cols-[1fr_auto_auto_auto_auto] items-center px-4 py-2.5 border-b border-gray-200 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wide gap-4">
+                <span>Project</span>
+                <span className="w-20 text-center">Job #</span>
+                <span className="w-28 text-center">Start Date</span>
+                <span className="w-20 text-center">Status</span>
+                <span className="w-16 text-center">Actions</span>
               </div>
-            ))}
-          </div>
+              {projects.map((project, i) => (
+                <div
+                  key={project.id}
+                  className={`grid grid-cols-[1fr_auto_auto_auto_auto] items-center px-4 py-3 gap-4 hover:bg-gray-50 transition-colors ${
+                    i < projects.length - 1 ? 'border-b border-gray-100' : ''
+                  }`}
+                >
+                  {/* Name + location */}
+                  <div className="min-w-0">
+                    <p className="font-medium text-gray-900 text-sm truncate">{project.name}</p>
+                    {(project.city || project.state) && (
+                      <p className="text-xs text-gray-400 mt-0.5">{[project.city, project.state].filter(Boolean).join(', ')}</p>
+                    )}
+                  </div>
+                  {/* Job # */}
+                  <span className="w-20 text-center text-sm text-gray-600">{project.job_number || '—'}</span>
+                  {/* Start date */}
+                  <span className="w-28 text-center text-sm text-gray-600">
+                    {project.start_date ? new Date(project.start_date).toLocaleDateString() : '—'}
+                  </span>
+                  {/* Status */}
+                  <span className={`w-20 text-center px-2 py-1 rounded text-xs font-medium ${
+                    project.status === 'active'  ? 'bg-[#E8F5E9] text-[#4CAF50]' :
+                    project.status === 'paused'  ? 'bg-[#FFF8E1] text-[#FFC107]' :
+                                                   'bg-gray-100 text-gray-700'
+                  }`}>
+                    {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
+                  </span>
+                  {/* Actions */}
+                  <div className="w-16 flex items-center justify-center gap-1">
+                    <button
+                      onClick={() => openEdit(project)}
+                      className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none"
+                      aria-label={`Edit ${project.name}`}
+                    >
+                      <Pencil className="w-3.5 h-3.5 text-gray-500" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(project.id)}
+                      className="p-1.5 hover:bg-[#FFEBEE] rounded-lg transition-colors focus:outline-none"
+                      aria-label={`Delete ${project.name}`}
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-[#F44336]" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
         )}
       </div>
 

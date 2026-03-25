@@ -42,45 +42,34 @@ function inferType(action: string): string {
 
 const mockActivities: Activity[] = [
   {
-    id: '1', employeeName: 'Ricky Smith',
-    action: 'submitted a material log in', project: 'Storey Bend Wicking Project',
-    activityType: 'Metrics', timestamp: 'Today at 5:32 AM',
-    metrics: [{ label: 'GREEN SPACE COMPLETED', value: '29.8', unit: 'Acres', highlight: true, id: 'ACRES-002' }],
-    photos: ['https://images.unsplash.com/photo-1699625809637-31c6f327ac96?w=200&h=200&fit=crop'],
+    id: '1', employeeName: 'William Barfield',
+    action: 'submitted a material log in', project: 'Caloosahatchee Wicking Project',
+    activityType: 'Metrics', timestamp: '8:19 PM | 2026-03-24 for 2026-03-23',
+    metrics: [{ label: 'SPRAYING: Super Dye', value: '24', unit: 'oz.', highlight: true }],
+    photos: [],
   },
   {
     id: '2', employeeName: 'Ricky Smith',
     action: 'submitted a general note in', project: 'Storey Bend Wicking Project',
-    activityType: 'Notes', timestamp: 'Today at 5:32 AM',
-    metrics: [{ label: 'Kubota hours', value: '4.5', unit: 'hrs' }],
+    activityType: 'Notes', timestamp: '5:32 AM | 2026-03-25 for 2026-03-24',
+    metrics: [{ label: 'EQUIPMENT: Kubota', value: '4.5', unit: 'hrs', highlight: true }],
     photos: [
       'https://images.unsplash.com/photo-1637531347055-4fa8aa80c111?w=200&h=200&fit=crop',
       'https://images.unsplash.com/photo-1759579471231-4e68075ebc76?w=200&h=200&fit=crop',
-      'https://images.unsplash.com/photo-1666136788646-60ab596ef775?w=200&h=200&fit=crop',
     ],
   },
   {
-    id: '3', employeeName: 'Ricky Smith',
-    action: 'submitted a general note in', project: 'Storey Bend Wicking Project',
-    activityType: 'Notes', timestamp: 'Today at 5:31 AM',
-    metrics: [{ label: 'Tractor hours', value: '6.2', unit: 'hrs' }],
-    photos: [
-      'https://images.unsplash.com/photo-1699625809637-31c6f327ac96?w=200&h=200&fit=crop',
-      'https://images.unsplash.com/photo-1637531347055-4fa8aa80c111?w=200&h=200&fit=crop',
-    ],
-  },
-  {
-    id: '4', employeeName: 'Sarah Johnson',
+    id: '3', employeeName: 'Sarah Johnson',
     action: 'completed daily inspection for', project: 'Redlands Wicking Project',
-    activityType: 'Checklists', timestamp: 'Today at 8:15 AM',
+    activityType: 'Checklists', timestamp: '8:15 AM | 2026-03-25 for 2026-03-25',
     metrics: [{ label: 'AREA COMPLETED', value: '15.2', unit: 'Acres', highlight: true, id: 'ACRES-003' }],
     photos: [],
   },
   {
-    id: '5', employeeName: 'Mike Torres',
+    id: '4', employeeName: 'Mike Torres',
     action: 'submitted equipment maintenance log in', project: 'Oakwood Infrastructure',
-    activityType: 'Checklists', timestamp: 'Yesterday at 7:45 PM',
-    metrics: [{ label: 'Equipment hours', value: '4.5', unit: 'hrs' }],
+    activityType: 'Checklists', timestamp: '7:45 PM | 2026-03-24 for 2026-03-24',
+    metrics: [{ label: 'MAINTENANCE: Filter Check', value: '1', unit: 'session', highlight: true }],
     photos: ['https://images.unsplash.com/photo-1759579471231-4e68075ebc76?w=200&h=200&fit=crop'],
   },
 ];
@@ -429,7 +418,7 @@ export function ActivityScreen() {
             </button>
           </div>
         ) : (
-          <div className="max-w-4xl space-y-3">
+          <div className="space-y-3">
             {filtered.map(activity => (
               <ActivityCard key={activity.id} activity={activity} />
             ))}
