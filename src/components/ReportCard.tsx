@@ -50,69 +50,67 @@ export function ReportCard({ report }: ReportCardProps) {
       role="article"
       aria-label={`Daily report for ${report.projectName}`}
     >
-      {/* Clickable Header */}
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full p-5 text-left hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#FF6633]"
-        aria-expanded={isExpanded}
-        aria-controls={`report-details-${report.id}`}
-      >
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 bg-[#E3F2FD] rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                <Calendar className="w-4 h-4 text-[#2196F3]" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-black text-base mb-1">
-                  Daily Report for {report.projectName}
-                </h3>
-                <p className="text-xs text-gray-500">{report.timestamp}</p>
-                
-                <div className="flex items-center gap-3 mt-3">
-                  <div className="flex items-center gap-1.5 text-sm text-gray-700 bg-white border border-gray-200 px-2 py-1 rounded">
-                    <WeatherIcon className="w-4 h-4 text-[#2196F3]" />
-                    <span>{report.weather.high}°/{report.weather.low}°F</span>
-                  </div>
-                  
-                  {report.delays > 0 && (
-                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-[#FFF8E1] text-[#FFC107] border border-[#FFC107]/20">
-                      <AlertCircle className="w-3 h-3" />
-                      {report.delays} Delay
-                    </span>
-                  )}
-                  
-                  {report.photos.length > 0 && (
-                    <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                      {report.photos.length} {report.photos.length === 1 ? 'photo' : 'photos'}
-                    </span>
-                  )}
+      {/* Card header — flex row with expand area + download button side by side */}
+      <div className="flex items-stretch">
+        {/* Expand area (takes up most of the row) */}
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="flex-1 p-5 text-left hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#FF6633]"
+          aria-expanded={isExpanded}
+          aria-controls={`report-details-${report.id}`}
+        >
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 bg-[#E3F2FD] rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+              <Calendar className="w-4 h-4 text-[#2196F3]" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-black text-base mb-1">
+                Daily Report for {report.projectName}
+              </h3>
+              <p className="text-xs text-gray-500">{report.timestamp}</p>
+
+              <div className="flex items-center gap-3 mt-3">
+                <div className="flex items-center gap-1.5 text-sm text-gray-700 bg-white border border-gray-200 px-2 py-1 rounded">
+                  <WeatherIcon className="w-4 h-4 text-[#2196F3]" />
+                  <span>{report.weather.high}°/{report.weather.low}°F</span>
                 </div>
+
+                {report.delays > 0 && (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-[#FFF8E1] text-[#FFC107] border border-[#FFC107]/20">
+                    <AlertCircle className="w-3 h-3" />
+                    {report.delays} Delay
+                  </span>
+                )}
+
+                {report.photos.length > 0 && (
+                  <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                    {report.photos.length} {report.photos.length === 1 ? 'photo' : 'photos'}
+                  </span>
+                )}
               </div>
             </div>
           </div>
+        </button>
 
-          {/* Expand Icon & Download */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <button
-              onClick={downloadPDF}
-              className="p-2 hover:bg-[#FFEBEE] rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-[#F44336]"
-              aria-label="Download PDF report"
-              title="Download PDF"
-            >
-              <div className="w-5 h-5 flex items-center justify-center">
-                <FileDown className="w-4 h-4 text-[#F44336]" />
-              </div>
-            </button>
-            <ChevronDown 
-              className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${
-                isExpanded ? 'rotate-180' : ''
-              }`}
-              aria-hidden="true"
-            />
-          </div>
+        {/* Right-side actions — sibling, NOT nested inside the expand button */}
+        <div className="flex items-center gap-1 pr-4 flex-shrink-0">
+          <button
+            onClick={downloadPDF}
+            className="p-2 hover:bg-[#FFEBEE] rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-[#F44336]"
+            aria-label="Download PDF report"
+            title="Download PDF"
+          >
+            <FileDown className="w-4 h-4 text-[#F44336]" />
+          </button>
+          <ChevronDown
+            className={`w-5 h-5 text-gray-400 transition-transform duration-200 pointer-events-none ${
+              isExpanded ? 'rotate-180' : ''
+            }`}
+            aria-hidden="true"
+          />
         </div>
-      </button>
+      </div>
+
 
       {/* Expanded PDF Preview */}
       {isExpanded && (

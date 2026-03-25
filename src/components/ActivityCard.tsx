@@ -3,28 +3,12 @@
 import { ChevronDown, Calendar } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
-
-interface ActivityMetric {
-  label: string;
-  value: string;
-  unit: string;
-  highlight?: boolean;
-  id?: string;
-}
-
-interface Activity {
-  id: string;
-  employeeName: string;
-  action: string;
-  project: string;
-  timestamp: string;
-  metrics: ActivityMetric[];
-  photos: string[];
-}
+import type { Activity } from "./ActivityScreen";
 
 interface ActivityCardProps {
   activity: Activity;
 }
+
 
 export function ActivityCard({ activity }: ActivityCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
