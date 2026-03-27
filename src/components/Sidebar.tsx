@@ -200,11 +200,12 @@ export function Sidebar() {
   return (
     <aside className="flex h-full flex-shrink-0">
       {/* ── Icon rail ── */}
-      <div className="w-[72px] bg-gray-900 flex flex-col items-center py-3 gap-1">
+      <div className="w-20 bg-gray-900 flex flex-col items-center py-8 gap-6">
         {/* Logo */}
-        <div className="w-10 h-10 bg-[#FF6633] rounded-xl flex items-center justify-center mb-3 flex-shrink-0">
-          <span className="text-white font-bold text-sm">UV</span>
+        <div className="w-12 h-12 bg-[#FF6633] rounded-2xl flex items-center justify-center mb-6 flex-shrink-0 shadow-lg shadow-orange-500/10">
+          <span className="text-white font-bold text-base">UV</span>
         </div>
+
 
         {MAIN_NAV.map(({ id, label, icon: Icon, path }) => {
           const isActive = activeSection === id;
@@ -235,10 +236,11 @@ export function Sidebar() {
           <Settings className="w-5 h-5" />
         </Link>
         {/* User avatar placeholder */}
-        <div className="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center mb-1">
+        <div className="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center mb-2 hover:bg-gray-500 transition-colors cursor-pointer border-2 border-gray-700">
           <span className="text-white text-xs font-medium">U</span>
         </div>
       </div>
+
 
       {/* ── Sub-nav panel (only for Dashboard section) ── */}
       {activeSection === "dashboard" && (
