@@ -95,18 +95,19 @@ function DashboardSubNav({ pathname }: { pathname: string }) {
   };
 
   return (
-    <div className="w-56 bg-white border-r border-gray-200 flex flex-col">
+    <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
       {/* Project Selector (Top of white panel) */}
-      <div className="p-4 border-b border-gray-100 mb-2">
+      <div className="p-5 border-b border-gray-100 mb-4">
         <div className="relative">
           <button
             type="button"
             onClick={() => setIsProjectDropdownOpen(!isProjectDropdownOpen)}
-            className="w-full bg-white border border-gray-200 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm text-left flex items-center justify-between transition-colors focus:outline-none focus:ring-2 focus:ring-[#FF6633]/20"
+            className="w-full bg-white border border-gray-200 hover:bg-gray-50 px-4 py-3 rounded-xl text-lg text-left flex items-center justify-between transition-colors focus:outline-none focus:ring-2 focus:ring-[#FF6633]/10"
           >
-            <span className="text-gray-700 truncate font-medium">{selectedProject}</span>
-            <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0 ml-2" />
+            <span className="text-gray-500 truncate font-medium">{selectedProject}</span>
+            <ChevronDown className="w-5 h-5 text-gray-400 flex-shrink-0 ml-2" />
           </button>
+
 
           
           {isProjectDropdownOpen && (
@@ -131,36 +132,36 @@ function DashboardSubNav({ pathname }: { pathname: string }) {
 
 
       {/* Nav Items */}
-      <div className="flex-1 overflow-y-auto w-full px-2">
+      <div className="flex-1 overflow-y-auto w-full px-3 space-y-4">
         {DASHBOARD_SUB.map((item) => {
           if (item.children) {
             // Expandable group (Insights)
             const anyChildActive = item.children.some(c => pathname.startsWith(c.path));
             return (
-              <div key={item.label} className="mb-0.5">
+              <div key={item.label} className="mb-1">
                 <button
                   onClick={() => setInsightsOpen(o => !o)}
-                  className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors focus:outline-none ${
+                  className={`w-full flex items-center gap-4 px-4 py-3.5 text-lg rounded-xl transition-all focus:outline-none ${
                     anyChildActive
-                      ? "text-gray-900 font-medium"
-                      : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                      ? "text-gray-900 font-bold bg-gray-50"
+                      : "text-gray-700 hover:text-gray-900 hover:bg-gray-50"
                   }`}
                 >
-                  <item.icon className="w-4 h-4 flex-shrink-0" />
+                  <item.icon className="w-6 h-6 flex-shrink-0 fill-current/10" strokeWidth={1.5} />
                   <span className="flex-1 text-left">{item.label}</span>
                   {insightsOpen
-                    ? <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
-                    : <ChevronRight className="w-3.5 h-3.5 text-gray-400" />}
+                    ? <ChevronDown className="w-5 h-5 text-gray-400" />
+                    : <ChevronRight className="w-5 h-5 text-gray-400" />}
                 </button>
                 {insightsOpen && (
-                  <div className="pl-10 pb-1 mt-0.5 space-y-0.5">
+                  <div className="pl-12 pb-2 mt-1 space-y-1">
                     {item.children.map(child => (
                       <Link
                         key={child.path}
                         href={child.path}
-                        className={`block py-2 pr-3 pl-2 text-sm rounded-lg transition-colors ${
+                        className={`block py-2.5 pr-4 pl-3 text-base rounded-lg transition-colors ${
                           pathname.startsWith(child.path)
-                            ? "text-blue-600 font-medium bg-blue-50/50"
+                            ? "text-blue-600 font-bold bg-blue-50/50"
                             : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
                         }`}
                       >
@@ -175,23 +176,28 @@ function DashboardSubNav({ pathname }: { pathname: string }) {
 
           // Regular item
           const isActive = item.path && pathname.startsWith(item.path);
+          const isActivity = item.label === "Activity";
+
           return (
             <Link
               key={item.label}
               href={item.path ?? "#"}
-              className={`flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors mb-0.5 focus:outline-none ${
+              className={`flex items-center gap-4 px-4 py-3.5 text-lg rounded-xl transition-all mb-1 focus:outline-none ${
                 isActive
-                  ? "text-blue-600 font-semibold bg-blue-50/50"
-                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                  ? isActivity 
+                    ? "text-[#2196F3] font-bold bg-[#2196F3]/5"
+                    : "text-gray-900 font-bold bg-gray-50"
+                  : "text-gray-700 hover:text-gray-900 hover:bg-gray-50"
               }`}
             >
-              <item.icon className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-blue-600" : ""}`} />
+              <item.icon className={`w-6 h-6 flex-shrink-0 ${isActive && isActivity ? "text-[#2196F3] fill-[#2196F3]/10" : "fill-current/5"}`} strokeWidth={1.5} />
               <span>{item.label}</span>
             </Link>
           );
         })}
       </div>
     </div>
+
   );
 }
 
