@@ -2,13 +2,16 @@ import { ActivityScreen } from "@/components/ActivityScreen";
 import { Suspense } from "react";
 import { supabaseServer } from "@/lib/supabase-server";
 
-async function getInitialActivities() {
+// Using a type import to be safe
+import type { Activity } from "@/components/ActivityScreen";
+
+async function getInitialActivities(): Promise<Activity[]> {
   const { data } = await supabaseServer
     .from('activities_view')
     .select('*')
     .order('iso_timestamp', { ascending: false })
     .limit(50);
-  return data || [];
+  return (data || []) as Activity[];
 }
 
 export default async function ActivityPage() {
@@ -20,4 +23,3 @@ export default async function ActivityPage() {
     </Suspense>
   );
 }
-

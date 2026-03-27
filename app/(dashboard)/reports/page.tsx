@@ -16,8 +16,13 @@ async function getInitialReports() {
     projectName: report.projects?.name || 'Unknown Project',
     date: report.signed_at || report.created_at,
     timestamp: new Date(report.created_at).toLocaleString(),
-    weather: { high: 75, low: 60, condition: 'sunny' },
+    weather: { 
+      high: 75, 
+      low: 60, 
+      condition: 'sunny' as const
+    },
     photos: report.signature_url ? [report.signature_url] : [],
+
     delays: 0
   }));
 }
