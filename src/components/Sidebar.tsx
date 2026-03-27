@@ -3,8 +3,9 @@
 import {
   LayoutDashboard, FolderOpen, Users, Building2,
   BarChart3, FileText, TrendingUp, Eye, ChevronDown,
-  ChevronRight, Settings,
+  ChevronRight, Settings, HardHat,
 } from "lucide-react";
+
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
@@ -195,11 +196,12 @@ export function Sidebar() {
   return (
     <aside className="flex h-full flex-shrink-0">
       {/* ── Icon rail ── */}
-      <div className="w-20 bg-gray-900 flex flex-col items-center py-8 gap-6">
-        {/* Logo */}
-        <div className="w-12 h-12 bg-[#FF6633] rounded-2xl flex items-center justify-center mb-6 flex-shrink-0 shadow-lg shadow-orange-500/10">
-          <span className="text-white font-bold text-base">UV</span>
+      <div className="w-20 bg-gray-900 flex flex-col items-center py-10 gap-8">
+        {/* Logo - Hard Hat */}
+        <div className="flex items-center justify-center mb-6 flex-shrink-0">
+          <HardHat className="w-12 h-12 text-gray-300 fill-gray-300/20" strokeWidth={1.5} />
         </div>
+
 
 
         {MAIN_NAV.map(({ id, label, icon: Icon, path }) => {
@@ -209,15 +211,16 @@ export function Sidebar() {
               key={id}
               href={path}
               title={label}
-              className={`flex flex-col items-center gap-1 w-14 py-2.5 rounded-xl transition-all ${
+              className={`flex flex-col items-center gap-2 w-16 py-3 rounded-xl transition-all ${
                 isActive
-                  ? "bg-gray-700 text-white"
-                  : "text-gray-500 hover:bg-gray-800 hover:text-gray-300"
+                  ? "bg-gray-700/80 text-white"
+                  : "text-gray-400 hover:bg-gray-800 hover:text-gray-200"
               }`}
             >
-              <Icon className="w-5 h-5" />
-              <span className="text-[10px] font-medium leading-none">{label}</span>
+              <Icon className={`w-6 h-6 ${isActive ? "fill-white/10" : "fill-current/5"}`} strokeWidth={1.5} />
+              <span className="text-[12px] font-bold leading-none tracking-tight">{label}</span>
             </Link>
+
           );
         })}
 
