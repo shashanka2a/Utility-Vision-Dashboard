@@ -142,6 +142,23 @@ const migrations = [
       WHERE NOT EXISTS (SELECT 1 FROM public.projects LIMIT 1);
     `,
   },
+  {
+    name: '007_create_activities',
+    sql: `
+      CREATE TABLE IF NOT EXISTS public.activities (
+        id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        employee_name    TEXT NOT NULL,
+        action           TEXT NOT NULL,
+        project_name     TEXT NOT NULL,
+        activity_type    TEXT NOT NULL,
+        timestamp_label  TEXT NOT NULL,
+        metrics          JSONB NOT NULL DEFAULT '[]'::jsonb,
+        photos           TEXT[] NOT NULL DEFAULT '{}',
+        created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+        updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+    `,
+  },
 ];
 
 

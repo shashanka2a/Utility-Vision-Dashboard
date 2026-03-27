@@ -30,49 +30,9 @@ const ACTIVITY_TYPES = [
   'Attachments', 'Observations', 'Incidents', 'Safety Talks', 'Activity',
 ];
 
-// Map action text → activity type for mock data
-function inferType(action: string): string {
-  if (action.includes('note'))        return 'Notes';
-  if (action.includes('chemical'))    return 'Chemicals';
-  if (action.includes('material'))    return 'Metrics';
-  if (action.includes('inspection'))  return 'Checklists';
-  if (action.includes('equipment'))   return 'Checklists';
-  return 'Activity';
-}
+// ─── Removed mockActivity array in favor of DB fetch ────────────────────────
 
-const mockActivities: Activity[] = [
-  {
-    id: '1', employeeName: 'William Barfield',
-    action: 'submitted a material log in', project: 'Caloosahatchee Wicking Project',
-    activityType: 'Metrics', timestamp: '8:19 PM | 2026-03-24 for 2026-03-23',
-    metrics: [{ label: 'SPRAYING: Super Dye', value: '24', unit: 'oz.', highlight: true }],
-    photos: [],
-  },
-  {
-    id: '2', employeeName: 'Ricky Smith',
-    action: 'submitted a general note in', project: 'Storey Bend Wicking Project',
-    activityType: 'Notes', timestamp: '5:32 AM | 2026-03-25 for 2026-03-24',
-    metrics: [{ label: 'EQUIPMENT: Kubota', value: '4.5', unit: 'hrs', highlight: true }],
-    photos: [
-      'https://images.unsplash.com/photo-1637531347055-4fa8aa80c111?w=200&h=200&fit=crop',
-      'https://images.unsplash.com/photo-1759579471231-4e68075ebc76?w=200&h=200&fit=crop',
-    ],
-  },
-  {
-    id: '3', employeeName: 'Sarah Johnson',
-    action: 'completed daily inspection for', project: 'Redlands Wicking Project',
-    activityType: 'Checklists', timestamp: '8:15 AM | 2026-03-25 for 2026-03-25',
-    metrics: [{ label: 'AREA COMPLETED', value: '15.2', unit: 'Acres', highlight: true, id: 'ACRES-003' }],
-    photos: [],
-  },
-  {
-    id: '4', employeeName: 'Mike Torres',
-    action: 'submitted equipment maintenance log in', project: 'Oakwood Infrastructure',
-    activityType: 'Checklists', timestamp: '7:45 PM | 2026-03-24 for 2026-03-24',
-    metrics: [{ label: 'MAINTENANCE: Filter Check', value: '1', unit: 'session', highlight: true }],
-    photos: ['https://images.unsplash.com/photo-1759579471231-4e68075ebc76?w=200&h=200&fit=crop'],
-  },
-];
+
 
 // ─── Multi-select pill component ─────────────────────────────────────────────
 
@@ -262,10 +222,11 @@ function FiltersModal({
 const EMPTY_FILTERS: Filters = { projects: [], members: [], activityTypes: [] };
 
 export function ActivityScreen() {
-  const [activities] = useState<Activity[]>(mockActivities);
+  const [activities, setActivities] = useState<Activity[]>([]);
   const [projectOptions, setProjectOptions] = useState<string[]>([]);
   const [memberOptions, setMemberOptions] = useState<string[]>([]);
   const [loadingMeta, setLoadingMeta] = useState(true);
+  const [loadingActivities, setLoadingActivities] = useState(true);
 
   const [search, setSearch] = useState('');
   const [appliedFilters, setAppliedFilters] = useState<Filters>(EMPTY_FILTERS);
@@ -274,17 +235,26 @@ export function ActivityScreen() {
   // ── Fetch project & employee names from DB ──────────────────────────────────
   const fetchMeta = useCallback(async () => {
     try {
-      const [projRes, empRes] = await Promise.all([
+      const [projRes, empRes, actRes] = await Promise.all([
         fetch('/api/projects'),
         fetch('/api/employees'),
+        fetch('/api/activities')
       ]);
-      const [projects, employees] = await Promise.all([projRes.json(), empRes.json()]);
+      const [projects, employees, activitiesData] = await Promise.all([
+        projRes.json(), 
+        empRes.json(),
+        actRes.json()
+      ]);
       setProjectOptions(projects.map((p: { name: string }) => p.name));
       setMemberOptions(employees.map((e: { name: string }) => e.name));
+      if (!activitiesData.error) {
+        setActivities(activitiesData);
+      }
     } catch {
       // silent — filters will just show empty options
     } finally {
       setLoadingMeta(false);
+      setLoadingActivities(false);
     }
   }, []);
 
@@ -410,7 +380,11 @@ export function ActivityScreen() {
 
       {/* Activity Feed */}
       <div className="flex-1 overflow-y-auto p-6">
-        {filtered.length === 0 ? (
+        {loadingActivities ? (
+          <div className="flex items-center justify-center h-48">
+             <Loader2 className="w-8 h-8 text-gray-400 animate-spin" />
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 gap-2 text-gray-400">
             <p className="text-lg font-medium">No activities match your filters</p>
             <button onClick={() => { setAppliedFilters(EMPTY_FILTERS); setSearch(''); }} className="text-sm text-[#FF6633] underline">

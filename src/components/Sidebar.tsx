@@ -44,9 +44,8 @@ const DASHBOARD_SUB = [
 // ─── Static projects list (mock) ──────────────────────────────────────────────────
 const PROJECTS_LIST = [
   { id: "all", name: "All Projects" },
-  { id: "storey-bend", name: "Storey Bend Wicking Project" },
-  { id: "redlands", name: "Redlands Wicking Project" },
-  { id: "oakwood", name: "Oakwood Infrastructure" },
+  { id: "solar-artifact", name: "Solar Artifact Site" },
+  { id: "big-water", name: "Big Water Wicking Project" },
 ];
 
 
