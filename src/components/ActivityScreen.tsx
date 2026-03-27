@@ -4,6 +4,8 @@ import { Calendar, SlidersHorizontal, Search, LayoutGrid, X, Loader2, ChevronDow
 import { ActivityCard } from './ActivityCard';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useProject } from '@/context/ProjectContext';
+
 
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -233,26 +235,11 @@ export function ActivityScreen() {
   const [loadingActivities, setLoadingActivities] = useState(true);
 
   const [search, setSearch] = useState('');
-  const searchParams = useSearchParams();
+  const { selectedProject } = useProject();
   const [appliedFilters, setAppliedFilters] = useState<Filters>(EMPTY_FILTERS);
   
-  // Sync URL project parameter to filter
-  useEffect(() => {
-    const projectParam = searchParams.get('project');
-    if (projectParam) {
-      setAppliedFilters(prev => ({
-        ...prev,
-        projects: [projectParam]
-      }));
-    } else {
-      setAppliedFilters(prev => ({
-        ...prev,
-        projects: []
-      }));
-    }
-  }, [searchParams]);
-
   const [dateRange, setDateRange] = useState<'today' | '7d' | '30d' | 'all'>('all');
+
 
   const [filterModalOpen, setFilterModalOpen] = useState(false);
   const [dateDropdownOpen, setDateDropdownOpen] = useState(false);
@@ -306,8 +293,12 @@ export function ActivityScreen() {
 
   // ── Client-side filter ────────────────────────────────────────────────────
   const filtered = activities.filter(a => {
+    // 0. Global Project Filter (from Sidebar)
+    if (selectedProject !== 'All Projects' && a.project !== selectedProject) return false;
+
     // 1. Search Query
     const q = search.toLowerCase();
+
     if (q && !a.employeeName.toLowerCase().includes(q) &&
              !a.project.toLowerCase().includes(q) &&
              !a.action.toLowerCase().includes(q)) return false;

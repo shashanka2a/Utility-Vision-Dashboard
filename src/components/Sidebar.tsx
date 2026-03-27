@@ -7,7 +7,9 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { useProject } from "@/context/ProjectContext";
+
 
 
 
@@ -62,8 +64,7 @@ function getActiveSection(pathname: string) {
 
 // ─── Dashboard sub-nav panel ───────────────────────────────────────────────────
 function DashboardSubNav({ pathname }: { pathname: string }) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+  const { selectedProject, setSelectedProject } = useProject();
   const [insightsOpen, setInsightsOpen] = useState(pathname.startsWith("/daily-logs"));
   const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState(false);
   const [projects, setProjects] = useState<ProjectOption[]>([]);
@@ -80,16 +81,8 @@ function DashboardSubNav({ pathname }: { pathname: string }) {
       .catch(() => {});
   }, []);
 
-  const selectedProjectName = searchParams.get('project') || 'All Projects';
-
   const handleProjectSelect = (name: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (name === 'All Projects') {
-      params.delete('project');
-    } else {
-      params.set('project', name);
-    }
-    router.push(`${pathname}?${params.toString()}`);
+    setSelectedProject(name);
     setIsProjectDropdownOpen(false);
   };
 
@@ -103,9 +96,10 @@ function DashboardSubNav({ pathname }: { pathname: string }) {
             onClick={() => setIsProjectDropdownOpen(!isProjectDropdownOpen)}
             className="w-full bg-white border border-gray-200 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm text-left flex items-center justify-between transition-colors focus:outline-none focus:ring-2 focus:ring-[#FF6633]/20"
           >
-            <span className="text-gray-700 truncate font-medium">{selectedProjectName}</span>
+            <span className="text-gray-700 truncate font-medium">{selectedProject}</span>
             <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0 ml-2" />
           </button>
+
           
           {isProjectDropdownOpen && (
             <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-lg z-20 border border-gray-100 py-1 max-h-[300px] overflow-y-auto">
@@ -115,7 +109,7 @@ function DashboardSubNav({ pathname }: { pathname: string }) {
                   type="button"
                   onClick={() => handleProjectSelect(project.name)}
                   className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition-colors ${
-                    selectedProjectName === project.name ? 'text-[#FF6633] font-medium bg-orange-50/50' : 'text-gray-600'
+                    selectedProject === project.name ? 'text-[#FF6633] font-medium bg-orange-50/50' : 'text-gray-600'
                   }`}
                 >
                   {project.name}
@@ -125,6 +119,7 @@ function DashboardSubNav({ pathname }: { pathname: string }) {
           )}
         </div>
       </div>
+
 
 
       {/* Nav Items */}

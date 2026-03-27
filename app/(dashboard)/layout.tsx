@@ -1,5 +1,6 @@
 import { Sidebar } from "@/components/Sidebar";
 import { Suspense } from "react";
+import { ProjectProvider } from "@/context/ProjectContext";
 
 export default function DashboardLayout({
   children,
@@ -7,12 +8,15 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex h-screen bg-gray-100">
-      <Suspense fallback={<div className="w-[80px] bg-gray-900 h-full" />}>
-        <Sidebar />
-      </Suspense>
-      <main className="flex-1 overflow-auto">{children}</main>
-    </div>
+    <Suspense fallback={<div className="h-screen bg-gray-900" />}>
+      <ProjectProvider>
+        <div className="flex h-screen bg-gray-100 uppercase-sidebar-fix">
+          <Sidebar />
+          <main className="flex-1 overflow-auto">{children}</main>
+        </div>
+      </ProjectProvider>
+    </Suspense>
   );
 }
+
 
