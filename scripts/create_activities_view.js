@@ -25,10 +25,11 @@ const sql = `
     m.logged_at AS updated_at,
     m.photos,
     jsonb_build_array(
-      jsonb_build_object('label', 'ACRES COMPLETED', 'value', COALESCE(m.acres_completed, 0)::text, 'unit', 'Acres', 'highlight', true)
+      jsonb_build_object('label', 'ACRES COMPLETED', 'value', COALESCE(m.acres_completed, 0)::text, 'unit', 'Acres', 'highlight', true),
+      jsonb_build_object('label', 'NOTES', 'value', COALESCE(m.notes, ''), 'unit', '', 'highlight', false)
     ) AS metrics
   FROM public.metrics m
-  JOIN public.projects p ON p.id = m.project_id
+  LEFT JOIN public.projects p ON p.id = m.project_id
 
   UNION ALL
 
@@ -52,7 +53,7 @@ const sql = `
       )
     ) AS metrics
   FROM public.notes n
-  JOIN public.projects p ON p.id = n.project_id
+  LEFT JOIN public.projects p ON p.id = n.project_id
 
   UNION ALL
 
@@ -68,10 +69,11 @@ const sql = `
     e.logged_at AS updated_at,
     e.photos,
     jsonb_build_array(
-      jsonb_build_object('label', 'EQUIPMENT: ' || COALESCE(e.value, ''), 'value', '1', 'unit', COALESCE(e.unit, 'session'), 'highlight', true)
+      jsonb_build_object('label', 'EQUIPMENT: ' || COALESCE(e.value, ''), 'value', '1', 'unit', COALESCE(e.unit, 'session'), 'highlight', true),
+      jsonb_build_object('label', 'NOTES', 'value', COALESCE(e.notes, ''), 'unit', '', 'highlight', false)
     ) AS metrics
   FROM public.equipment_logs e
-  JOIN public.projects p ON p.id = e.project_id
+  LEFT JOIN public.projects p ON p.id = e.project_id
 
   UNION ALL
 
@@ -87,10 +89,11 @@ const sql = `
     c.logged_at AS updated_at,
     c.photos,
     jsonb_build_array(
-      jsonb_build_object('label', 'SPRAYING: ' || COALESCE(c.application_type, ''), 'value', '1', 'unit', 'app', 'highlight', true)
+      jsonb_build_object('label', 'SPRAYING: ' || COALESCE(c.application_type, ''), 'value', '1', 'unit', 'app', 'highlight', true),
+      jsonb_build_object('label', 'NOTES', 'value', COALESCE(c.notes, ''), 'unit', '', 'highlight', false)
     ) AS metrics
   FROM public.chemicals_logs c
-  JOIN public.projects p ON p.id = c.project_id
+  LEFT JOIN public.projects p ON p.id = c.project_id
 
   UNION ALL
 
@@ -106,10 +109,11 @@ const sql = `
     i.logged_at AS updated_at,
     i.photos,
     jsonb_build_array(
-      jsonb_build_object('label', 'INCIDENT', 'value', COALESCE(i.status, 'open'), 'unit', '', 'highlight', true)
+      jsonb_build_object('label', 'INCIDENT', 'value', COALESCE(i.status, 'open'), 'unit', '', 'highlight', true),
+      jsonb_build_object('label', 'DESCRIPTION', 'value', COALESCE(i.description, ''), 'unit', '', 'highlight', false)
     ) AS metrics
   FROM public.incidents i
-  JOIN public.projects p ON p.id = i.project_id
+  LEFT JOIN public.projects p ON p.id = i.project_id
 
   UNION ALL
 
@@ -125,10 +129,11 @@ const sql = `
     o.logged_at AS updated_at,
     o.attachments AS photos,
     jsonb_build_array(
-      jsonb_build_object('label', 'OBSERVATION: ' || COALESCE(o.category, ''), 'value', COALESCE(o.type, ''), 'unit', '', 'highlight', true)
+      jsonb_build_object('label', 'OBSERVATION: ' || COALESCE(o.category, ''), 'value', COALESCE(o.type, ''), 'unit', '', 'highlight', true),
+      jsonb_build_object('label', 'DESCRIPTION', 'value', COALESCE(o.description, ''), 'unit', '', 'highlight', false)
     ) AS metrics
   FROM public.observations o
-  JOIN public.projects p ON p.id = o.project_id
+  LEFT JOIN public.projects p ON p.id = o.project_id
 
   UNION ALL
 
@@ -147,7 +152,8 @@ const sql = `
       jsonb_build_object('label', 'TOPIC: ' || COALESCE(s.template_name, ''), 'value', '1', 'unit', 'talk', 'highlight', true)
     ) AS metrics
   FROM public.safety_talks s
-  JOIN public.projects p ON p.id = s.project_id;
+  LEFT JOIN public.projects p ON p.id = s.project_id;
+
 `;
 
 async function main() {

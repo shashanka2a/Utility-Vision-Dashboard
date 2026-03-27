@@ -6,8 +6,10 @@ import {
   ChevronRight, Settings,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
+
+
 
 // ─── Main nav items ────────────────────────────────────────────────────────────
 const MAIN_NAV = [
@@ -41,12 +43,12 @@ const DASHBOARD_SUB = [
   },
 ];
 
-// ─── Static projects list (mock) ──────────────────────────────────────────────────
-const PROJECTS_LIST = [
-  { id: "all", name: "All Projects" },
-  { id: "solar-artifact", name: "Solar Artifact Site" },
-  { id: "big-water", name: "Big Water Wicking Project" },
-];
+// Projects will be fetched from DB
+interface ProjectOption {
+  id: string;
+  name: string;
+}
+
 
 
 // ─── Which main-nav section is active ─────────────────────────────────────────
@@ -60,13 +62,36 @@ function getActiveSection(pathname: string) {
 
 // ─── Dashboard sub-nav panel ───────────────────────────────────────────────────
 function DashboardSubNav({ pathname }: { pathname: string }) {
-  const [insightsOpen, setInsightsOpen] = useState(
-    pathname.startsWith("/daily-logs")
-  );
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [insightsOpen, setInsightsOpen] = useState(pathname.startsWith("/daily-logs"));
   const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState(false);
-  const [selectedProject, setSelectedProject] = useState("all");
+  const [projects, setProjects] = useState<ProjectOption[]>([]);
 
-  const selectedProjectName = PROJECTS_LIST.find((p) => p.id === selectedProject)?.name ?? "Select project";
+  // Fetch real projects from DB
+  useEffect(() => {
+    fetch('/api/projects')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setProjects([{ id: 'all', name: 'All Projects' }, ...data]);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const selectedProjectName = searchParams.get('project') || 'All Projects';
+
+  const handleProjectSelect = (name: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (name === 'All Projects') {
+      params.delete('project');
+    } else {
+      params.set('project', name);
+    }
+    router.push(`${pathname}?${params.toString()}`);
+    setIsProjectDropdownOpen(false);
+  };
 
   return (
     <div className="w-56 bg-white border-r border-gray-200 flex flex-col">
@@ -84,16 +109,13 @@ function DashboardSubNav({ pathname }: { pathname: string }) {
           
           {isProjectDropdownOpen && (
             <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-lg z-20 border border-gray-100 py-1 max-h-[300px] overflow-y-auto">
-              {PROJECTS_LIST.map((project) => (
+              {projects.map((project) => (
                 <button
                   key={project.id}
                   type="button"
-                  onClick={() => {
-                    setSelectedProject(project.id);
-                    setIsProjectDropdownOpen(false);
-                  }}
+                  onClick={() => handleProjectSelect(project.name)}
                   className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition-colors ${
-                    selectedProject === project.id ? 'text-[#FF6633] font-medium bg-orange-50/50' : 'text-gray-600'
+                    selectedProjectName === project.name ? 'text-[#FF6633] font-medium bg-orange-50/50' : 'text-gray-600'
                   }`}
                 >
                   {project.name}
@@ -103,6 +125,7 @@ function DashboardSubNav({ pathname }: { pathname: string }) {
           )}
         </div>
       </div>
+
 
       {/* Nav Items */}
       <div className="flex-1 overflow-y-auto w-full px-2">

@@ -3,6 +3,8 @@
 import { Calendar, SlidersHorizontal, Search, LayoutGrid, X, Loader2, ChevronDown } from 'lucide-react';
 import { ActivityCard } from './ActivityCard';
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
+
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -231,8 +233,27 @@ export function ActivityScreen() {
   const [loadingActivities, setLoadingActivities] = useState(true);
 
   const [search, setSearch] = useState('');
+  const searchParams = useSearchParams();
   const [appliedFilters, setAppliedFilters] = useState<Filters>(EMPTY_FILTERS);
+  
+  // Sync URL project parameter to filter
+  useEffect(() => {
+    const projectParam = searchParams.get('project');
+    if (projectParam) {
+      setAppliedFilters(prev => ({
+        ...prev,
+        projects: [projectParam]
+      }));
+    } else {
+      setAppliedFilters(prev => ({
+        ...prev,
+        projects: []
+      }));
+    }
+  }, [searchParams]);
+
   const [dateRange, setDateRange] = useState<'today' | '7d' | '30d' | 'all'>('all');
+
   const [filterModalOpen, setFilterModalOpen] = useState(false);
   const [dateDropdownOpen, setDateDropdownOpen] = useState(false);
   const dateDropdownRef = useRef<HTMLDivElement>(null);
