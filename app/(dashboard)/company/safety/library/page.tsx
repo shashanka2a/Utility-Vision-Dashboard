@@ -25,14 +25,10 @@ export default function SafetyLibraryPage() {
     <div className="p-8 max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500">
       {/* Header Area */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href="/company" className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-            <ChevronLeft className="w-6 h-6 text-gray-600" />
-          </Link>
-          <h1 className="text-2xl font-bold text-gray-900">Library</h1>
-        </div>
+        <h1 className="text-2xl font-bold text-gray-900">Library</h1>
         
         <div className="flex items-center gap-3">
+
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input 

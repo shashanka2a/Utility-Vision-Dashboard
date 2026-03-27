@@ -1,15 +1,22 @@
 import { ActivityScreen } from "@/components/ActivityScreen";
 import { Suspense } from "react";
-import { Loader2 } from "lucide-react";
+import { supabaseServer } from "@/lib/supabase-server";
 
-export default function ActivityPage() {
+async function getInitialActivities() {
+  const { data } = await supabaseServer
+    .from('activities_view')
+    .select('*')
+    .order('iso_timestamp', { ascending: false })
+    .limit(50);
+  return data || [];
+}
+
+export default async function ActivityPage() {
+  const initialActivities = await getInitialActivities();
+
   return (
-    <Suspense fallback={
-      <div className="flex-1 flex items-center justify-center bg-gray-50 h-full">
-        <Loader2 className="w-8 h-8 text-[#FF6633] animate-spin" />
-      </div>
-    }>
-      <ActivityScreen />
+    <Suspense fallback={<div className="p-8 text-gray-400">Loading activity...</div>}>
+      <ActivityScreen initialActivities={initialActivities} />
     </Suspense>
   );
 }

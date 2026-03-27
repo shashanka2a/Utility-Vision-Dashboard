@@ -18,12 +18,16 @@ interface Report {
   delays: number;
 }
 
-export function ReportsScreen() {
-  const [reports, setReports] = useState<Report[]>([]);
-  const [loading, setLoading] = useState(true);
+export function ReportsScreen({ initialReports }: { initialReports?: Report[] }) {
+  const [reports, setReports] = useState<Report[]>(initialReports || []);
+  const [loading, setLoading] = useState(!initialReports);
 
   useEffect(() => {
+    // If we have initial reports, we don't NEED to fetch immediately
+    if (initialReports && initialReports.length > 0) return;
+    
     async function fetchReports() {
+
       try {
         const res = await fetch('/api/reports');
         const data = await res.json();

@@ -18,14 +18,10 @@ export default function ProjectTemplatesPage() {
     <div className="p-8 max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href="/company" className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-            <ChevronLeft className="w-6 h-6 text-gray-600" />
-          </Link>
-          <h1 className="text-2xl font-bold text-gray-900">Project templates</h1>
-        </div>
+        <h1 className="text-2xl font-bold text-gray-900">Project templates</h1>
         
         <button className="flex items-center gap-2 px-4 py-2 bg-[#2BD166] text-white text-sm font-semibold rounded-lg hover:bg-[#25b85a] transition-colors shadow-sm">
+
           <Plus className="w-4 h-4" />
           Project template
         </button>

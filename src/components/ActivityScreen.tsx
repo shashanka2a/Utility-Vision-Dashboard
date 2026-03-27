@@ -227,12 +227,12 @@ function FiltersModal({
 
 const EMPTY_FILTERS: Filters = { projects: [], members: [], activityTypes: [] };
 
-export function ActivityScreen() {
-  const [activities, setActivities] = useState<Activity[]>([]);
+export function ActivityScreen({ initialActivities }: { initialActivities?: Activity[] }) {
+  const [activities, setActivities] = useState<Activity[]>(initialActivities || []);
   const [projectOptions, setProjectOptions] = useState<string[]>([]);
   const [memberOptions, setMemberOptions] = useState<string[]>([]);
   const [loadingMeta, setLoadingMeta] = useState(true);
-  const [loadingActivities, setLoadingActivities] = useState(true);
+  const [loadingActivities, setLoadingActivities] = useState(!initialActivities);
 
   const [search, setSearch] = useState('');
   const { selectedProject } = useProject();

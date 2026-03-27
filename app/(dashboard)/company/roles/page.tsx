@@ -38,32 +38,35 @@ function PermissionRow({ permission }: { permission: Permission }) {
       {/* Member Toggle */}
       <div className="flex justify-center">
         <button 
-          className={`w-11 h-6 rounded-full transition-colors relative ${permission.member ? 'bg-gray-800' : 'bg-gray-200'}`}
+          className={`w-11 h-6 rounded-full transition-all relative ${permission.member ? 'bg-gray-800' : 'bg-gray-200'}`}
           aria-pressed={permission.member}
         >
-          <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${permission.member ? 'translate-x-5' : ''}`} />
+          <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${permission.member ? 'translate-x-5' : ''}`} />
         </button>
       </div>
+
 
       {/* Admin Toggle */}
       <div className="flex justify-center">
         <button 
-          className={`w-11 h-6 rounded-full transition-colors relative ${permission.admin ? 'bg-gray-800' : 'bg-gray-200'}`}
+          className={`w-11 h-6 rounded-full transition-all relative ${permission.admin ? 'bg-gray-800' : 'bg-gray-200'}`}
           aria-pressed={permission.admin}
         >
-          <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${permission.admin ? 'translate-x-5' : ''}`} />
+          <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${permission.admin ? 'translate-x-5' : ''}`} />
         </button>
       </div>
+
 
       {/* Account Admin Toggle */}
       <div className="flex justify-center">
         <button 
-          className={`w-11 h-6 rounded-full transition-colors relative ${permission.accountAdmin ? 'bg-gray-800' : 'bg-gray-200'}`}
+          className={`w-11 h-6 rounded-full transition-all relative ${permission.accountAdmin ? 'bg-gray-800' : 'bg-gray-200'}`}
           aria-pressed={permission.accountAdmin}
         >
-          <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${permission.accountAdmin ? 'translate-x-5' : ''}`} />
+          <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${permission.accountAdmin ? 'translate-x-5' : ''}`} />
         </button>
       </div>
+
     </div>
   );
 }
@@ -73,16 +76,12 @@ export default function RolesPage() {
     <div className="p-8 max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href="/company" className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-            <ChevronLeft className="w-6 h-6 text-gray-600" />
-          </Link>
-          <h1 className="text-2xl font-bold text-gray-900">Roles & permissions</h1>
-        </div>
+        <h1 className="text-2xl font-bold text-gray-900">Roles & permissions</h1>
         <button className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors shadow-sm bg-white">
           Restore default permissions
         </button>
       </div>
+
 
       {/* Table Container */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
