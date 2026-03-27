@@ -18,10 +18,12 @@ export async function GET() {
     action: activity.action,
     project: activity.project_name,
     activityType: activity.activity_type,
-    timestamp: activity.timestamp_label, // Should be date logic if timestamps, but sticking to text.
+    timestamp: activity.timestamp_label,
+    isoTimestamp: activity.created_at, // Add real timestamp for filtering
     metrics: activity.metrics || [],
     photos: activity.photos || [],
   }));
 
   return NextResponse.json(formattedData);
 }
+

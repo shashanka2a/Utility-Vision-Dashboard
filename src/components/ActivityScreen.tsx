@@ -13,9 +13,11 @@ export interface Activity {
   project: string;
   activityType: string;
   timestamp: string;
+  isoTimestamp: string; // Real date for filtering
   metrics: { label: string; value: string; unit: string; highlight?: boolean; id?: string }[];
   photos: string[];
 }
+
 
 interface Filters {
   projects: string[];
@@ -230,7 +232,22 @@ export function ActivityScreen() {
 
   const [search, setSearch] = useState('');
   const [appliedFilters, setAppliedFilters] = useState<Filters>(EMPTY_FILTERS);
+  const [dateRange, setDateRange] = useState<'today' | '7d' | '30d' | 'all'>('all');
   const [filterModalOpen, setFilterModalOpen] = useState(false);
+  const [dateDropdownOpen, setDateDropdownOpen] = useState(false);
+  const dateDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close date dropdown on click outside
+  useEffect(() => {
+    const h = (e: MouseEvent) => {
+      if (dateDropdownRef.current && !dateDropdownRef.current.contains(e.target as Node)) {
+        setDateDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, []);
+
 
   // ── Fetch project & employee names from DB ──────────────────────────────────
   const fetchMeta = useCallback(async () => {
@@ -268,15 +285,37 @@ export function ActivityScreen() {
 
   // ── Client-side filter ────────────────────────────────────────────────────
   const filtered = activities.filter(a => {
+    // 1. Search Query
     const q = search.toLowerCase();
     if (q && !a.employeeName.toLowerCase().includes(q) &&
              !a.project.toLowerCase().includes(q) &&
              !a.action.toLowerCase().includes(q)) return false;
+
+    // 2. Applied Filters (Project, Member, Type)
     if (appliedFilters.projects.length && !appliedFilters.projects.includes(a.project)) return false;
     if (appliedFilters.members.length  && !appliedFilters.members.includes(a.employeeName)) return false;
     if (appliedFilters.activityTypes.length && !appliedFilters.activityTypes.includes(a.activityType)) return false;
+
+    // 3. Date Range Filter
+    if (dateRange !== 'all') {
+      const date = new Date(a.isoTimestamp);
+      const now = new Date();
+      if (dateRange === 'today') {
+        if (date.toDateString() !== now.toDateString()) return false;
+      } else if (dateRange === '7d') {
+        const weekAgo = new Date();
+        weekAgo.setDate(now.getDate() - 7);
+        if (date < weekAgo) return false;
+      } else if (dateRange === '30d') {
+        const monthAgo = new Date();
+        monthAgo.setDate(now.getDate() - 30);
+        if (date < monthAgo) return false;
+      }
+    }
+
     return true;
   });
+
 
   return (
     <div className="h-full flex flex-col bg-gray-50">
@@ -295,10 +334,41 @@ export function ActivityScreen() {
 
         {/* Filter bar */}
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-3 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all">
-            <Calendar className="w-4 h-4" />
-            <span>Last 30 Days</span>
-          </button>
+          {/* Date Filter Dropdown */}
+          <div className="relative" ref={dateDropdownRef}>
+            <button
+              onClick={() => setDateDropdownOpen(!dateDropdownOpen)}
+              className={`flex items-center gap-2 px-3 py-2 border rounded-lg text-sm font-medium transition-all ${
+                dateRange !== 'all'
+                  ? 'border-[#FF6633] bg-[#FFF3EF] text-[#FF6633]'
+                  : 'border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300'
+              }`}
+            >
+              <Calendar className="w-4 h-4" />
+              <span>
+                {dateRange === 'all' ? 'All Time' :
+                 dateRange === 'today' ? 'Today' :
+                 dateRange === '7d' ? 'Last 7 Days' : 'Last 30 Days'}
+              </span>
+            </button>
+
+            {dateDropdownOpen && (
+              <div className="absolute z-30 left-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden py-1">
+                {(['all', 'today', '7d', '30d'] as const).map((r) => (
+                  <button
+                    key={r}
+                    onClick={() => { setDateRange(r); setDateDropdownOpen(false); }}
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors ${
+                      dateRange === r ? 'text-[#FF6633] font-semibold bg-[#FFF3EF]' : 'text-gray-700'
+                    }`}
+                  >
+                    {r === 'all' ? 'All Time' : r === 'today' ? 'Today' : r === '7d' ? 'Last 7 Days' : 'Last 30 Days'}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
 
           {/* Filters button */}
           <button
