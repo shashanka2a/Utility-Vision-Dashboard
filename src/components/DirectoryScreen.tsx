@@ -79,30 +79,38 @@ function RoleDropdown({
 
   return (
     <div className="relative" ref={ref}>
+      {/* Trigger */}
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
-        className={`w-full flex items-center justify-between px-3 py-2 border rounded-lg text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#FF6633] focus:border-transparent ${
-          value ? 'border-gray-300 text-gray-900' : 'border-gray-300 text-gray-400'
-        }`}
+        className={`w-full flex items-center justify-between px-3 py-2.5 border rounded-lg text-sm transition-all focus:outline-none ${
+          open ? 'border-gray-400 ring-2 ring-gray-200' : 'border-gray-300 hover:border-gray-400'
+        } ${value ? 'text-gray-900' : 'text-gray-400'}`}
       >
         <span>{value ? roleLabel(value) : 'Select'}</span>
-        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-4 h-4 text-gray-400 flex-shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
+      {/* Options list */}
       {open && (
-        <div className="absolute z-20 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden">
+        <div className="absolute z-30 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden divide-y divide-gray-100">
           {ROLES.map(role => (
             <button
               key={role.value}
               type="button"
               onClick={() => { onChange(role.value); setOpen(false); }}
-              className={`w-full text-left px-4 py-3 text-sm hover:bg-gray-50 transition-colors flex items-baseline gap-1 ${
-                value === role.value ? 'bg-[#FFF3EF]' : ''
-              }`}
+              className="w-full text-left px-4 py-3.5 text-sm hover:bg-gray-50 active:bg-gray-100 transition-colors flex items-center justify-between gap-3"
             >
-              <span className="font-medium text-gray-900">{role.label}</span>
-              <span className="text-gray-400 text-xs"> – {role.description}</span>
+              <span className="flex items-baseline gap-1.5 min-w-0">
+                <span className="font-semibold text-gray-900 whitespace-nowrap">{role.label}</span>
+                <span className="text-gray-300">–</span>
+                <span className="text-gray-400 truncate">{role.description}</span>
+              </span>
+              {value === role.value && (
+                <svg className="w-4 h-4 text-gray-700 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              )}
             </button>
           ))}
         </div>
