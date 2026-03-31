@@ -1,80 +1,68 @@
 /**
- * Run this script to create the safety_talk_templates table in Supabase.
+ * Creates the safety_talk_templates table directly via PostgreSQL connection.
  * Usage: node scripts/create_safety_talks_table.js
  */
 
-const { createClient } = require('@supabase/supabase-js');
+const { Client } = require('pg');
 require('dotenv').config();
 
-const supabase = createClient(
-  process.env.EXPO_PUBLIC_SUPABASE_URL,
-  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
-);
+const client = new Client({
+  connectionString: process.env.SUPABASE_DB_CONNECTION_STRING,
+  ssl: { rejectUnauthorized: false },
+});
 
-async function run() {
-  console.log('Creating safety_talk_templates table...');
+async function main() {
+  await client.connect();
+  console.log('Connected to database. Creating safety_talk_templates table...');
 
-  const { error } = await supabase.rpc('exec_sql', {
-    sql: `
-      -- Safety talk templates table (stores PDF references)
-      CREATE TABLE IF NOT EXISTS safety_talk_templates (
-        id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        name          TEXT NOT NULL,
-        description   TEXT,
-        pdf_url       TEXT,           -- Cloudinary or Supabase Storage URL
-        pdf_public_id TEXT,           -- Cloudinary public_id for deletion
-        file_size     BIGINT,         -- bytes
-        uploaded_by   TEXT,
-        created_at    TIMESTAMPTZ DEFAULT NOW(),
-        updated_at    TIMESTAMPTZ DEFAULT NOW()
-      );
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS safety_talk_templates (
+      id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      name          TEXT NOT NULL,
+      description   TEXT,
+      pdf_url       TEXT,
+      pdf_public_id TEXT,
+      file_size     BIGINT,
+      uploaded_by   TEXT,
+      created_at    TIMESTAMPTZ DEFAULT NOW(),
+      updated_at    TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
+  console.log('✅ Table created (or already exists).');
 
-      -- Enable Row Level Security
-      ALTER TABLE safety_talk_templates ENABLE ROW LEVEL SECURITY;
+  await client.query(`ALTER TABLE safety_talk_templates ENABLE ROW LEVEL SECURITY;`);
+  console.log('✅ RLS enabled.');
 
-      -- Allow all authenticated users to read
-      CREATE POLICY IF NOT EXISTS "Allow read" ON safety_talk_templates
-        FOR SELECT USING (true);
-
-      -- Allow all authenticated users to insert
-      CREATE POLICY IF NOT EXISTS "Allow insert" ON safety_talk_templates
-        FOR INSERT WITH CHECK (true);
-
-      -- Allow all authenticated users to update/delete
-      CREATE POLICY IF NOT EXISTS "Allow update" ON safety_talk_templates
-        FOR UPDATE USING (true);
-
-      CREATE POLICY IF NOT EXISTS "Allow delete" ON safety_talk_templates
-        FOR DELETE USING (true);
-    `
-  });
-
-  if (error) {
-    // If RPC not available, print the SQL to run manually
-    console.error('RPC not available. Run this SQL in Supabase SQL editor:\n');
-    console.log(`
-CREATE TABLE IF NOT EXISTS safety_talk_templates (
-  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name          TEXT NOT NULL,
-  description   TEXT,
-  pdf_url       TEXT,
-  pdf_public_id TEXT,
-  file_size     BIGINT,
-  uploaded_by   TEXT,
-  created_at    TIMESTAMPTZ DEFAULT NOW(),
-  updated_at    TIMESTAMPTZ DEFAULT NOW()
-);
-
-ALTER TABLE safety_talk_templates ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Allow read"   ON safety_talk_templates FOR SELECT USING (true);
-CREATE POLICY "Allow insert" ON safety_talk_templates FOR INSERT WITH CHECK (true);
-CREATE POLICY "Allow update" ON safety_talk_templates FOR UPDATE USING (true);
-CREATE POLICY "Allow delete" ON safety_talk_templates FOR DELETE USING (true);
-    `);
-  } else {
-    console.log('✅ safety_talk_templates table created successfully.');
+  // Drop existing policies if re-running
+  for (const policy of ['Allow read', 'Allow insert', 'Allow update', 'Allow delete']) {
+    await client.query(
+      `DROP POLICY IF EXISTS "${policy}" ON safety_talk_templates;`
+    );
   }
+
+  await client.query(`
+    CREATE POLICY "Allow read"   ON safety_talk_templates FOR SELECT USING (true);
+    CREATE POLICY "Allow insert" ON safety_talk_templates FOR INSERT WITH CHECK (true);
+    CREATE POLICY "Allow update" ON safety_talk_templates FOR UPDATE USING (true);
+    CREATE POLICY "Allow delete" ON safety_talk_templates FOR DELETE USING (true);
+  `);
+  console.log('✅ RLS policies applied.');
+
+  // Verify
+  const { rows } = await client.query(`
+    SELECT column_name, data_type
+    FROM information_schema.columns
+    WHERE table_name = 'safety_talk_templates'
+    ORDER BY ordinal_position;
+  `);
+  console.log('\n📋 Table schema:');
+  rows.forEach(r => console.log(`   ${r.column_name.padEnd(20)} ${r.data_type}`));
+
+  await client.end();
+  console.log('\n🎉 Done! safety_talk_templates is ready.');
 }
 
-run();
+main().catch(err => {
+  console.error('❌ Error:', err.message);
+  process.exit(1);
+});
