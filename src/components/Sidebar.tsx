@@ -184,13 +184,14 @@ function DashboardSubNav({ pathname }: { pathname: string }) {
               href={item.path ?? "#"}
               className={`flex items-center gap-3 px-3.5 py-2.5 text-[15px] rounded-lg transition-all mb-0.5 focus:outline-none ${
                 isActive
-                  ? isActivity 
-                    ? "text-[#2196F3] font-semibold bg-[#2196F3]/5"
-                    : "text-gray-900 font-semibold bg-gray-50"
+                  ? "text-[#2196F3] font-semibold bg-[#2196F3]/5"
                   : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
               }`}
             >
-              <item.icon className={`w-5 h-5 flex-shrink-0 ${isActive && isActivity ? "text-[#2196F3] fill-[#2196F3]/10" : "fill-current/5"}`} strokeWidth={1.5} />
+              <item.icon 
+                className={`w-5 h-5 flex-shrink-0 ${isActive ? "text-[#2196F3] fill-[#2196F3]/10" : "fill-current/5"}`} 
+                strokeWidth={1.5} 
+              />
               <span>{item.label}</span>
             </Link>
           );
