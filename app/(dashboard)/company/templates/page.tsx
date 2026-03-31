@@ -1,13 +1,10 @@
 "use client";
 
-import { Search, Plus, MoreHorizontal, ChevronLeft, Star } from "lucide-react";
-import Link from "next/link";
+import { Search, Plus, MoreHorizontal, FileText } from "lucide-react";
 import { useState } from "react";
 
-const TEMPLATES = [
-  { name: "Default Template", isFavorite: false },
-  { name: "Wicking Jobs Template", isFavorite: true },
-];
+// Initializing as empty to remove mock data
+const TEMPLATES: any[] = [];
 
 export default function ProjectTemplatesPage() {
   const [search, setSearch] = useState("");
@@ -20,23 +17,10 @@ export default function ProjectTemplatesPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Project templates</h1>
         
-        <button className="flex items-center gap-2 px-4 py-2 bg-[#2BD166] text-white text-sm font-semibold rounded-lg hover:bg-[#25b85a] transition-colors shadow-sm">
-
+        <button className="flex items-center gap-2 px-4 py-2.5 bg-gray-900 text-white text-sm font-semibold rounded-lg hover:bg-gray-800 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-400">
           <Plus className="w-4 h-4" />
-          Project template
+          Create template
         </button>
-      </div>
-
-      {/* Search */}
-      <div className="relative">
-        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-        <input 
-          type="text"
-          placeholder="Search..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6633]/20 w-64 transition-shadow bg-gray-50/50"
-        />
       </div>
 
       {/* List Container */}
@@ -48,21 +32,33 @@ export default function ProjectTemplatesPage() {
 
         {/* Rows */}
         <div className="divide-y divide-gray-100">
-          {filtered.map((template, idx) => (
-            <div key={idx} className="group flex items-center justify-between px-6 py-5 hover:bg-gray-50 transition-colors">
-              <div className="flex items-center gap-3">
-                <span className="text-base text-gray-800 font-medium">{template.name}</span>
-                {template.isFavorite && <Star className="w-4 h-4 fill-gray-900 text-gray-900" />}
+          {filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
+                <FileText className="w-8 h-8 text-gray-400" />
               </div>
-              <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all opacity-0 group-hover:opacity-100">
-                <MoreHorizontal className="w-5 h-5" />
+              <div>
+                <p className="text-gray-700 font-semibold text-base">No project templates</p>
+                <p className="text-gray-400 text-sm mt-1 max-w-xs px-6">
+                  Create templates to quickly set up new projects with predefined structures and settings.
+                </p>
+              </div>
+              <button className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white text-sm font-semibold rounded-lg hover:bg-gray-800 transition-colors mt-2">
+                <Plus className="w-4 h-4" />
+                Create your first template
               </button>
             </div>
-          ))}
-          {filtered.length === 0 && (
-            <div className="px-6 py-12 text-center text-gray-500 italic">
-              No templates found.
-            </div>
+          ) : (
+            filtered.map((template, idx) => (
+              <div key={idx} className="group flex items-center justify-between px-6 py-5 hover:bg-gray-50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <span className="text-base text-gray-800 font-medium">{template.name}</span>
+                </div>
+                <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all opacity-0 group-hover:opacity-100">
+                  <MoreHorizontal className="w-5 h-5" />
+                </button>
+              </div>
+            ))
           )}
         </div>
       </div>
