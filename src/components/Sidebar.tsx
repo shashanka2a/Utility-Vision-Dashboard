@@ -252,8 +252,8 @@ function CompanySubNav({ pathname }: { pathname: string }) {
                       <Link
                         key={child.path}
                         href={child.path}
-                        className={`flex items-center gap-2 px-3 py-2 text-[14px] rounded-md transition-colors ${
-                          pathname === child.path ? "text-[#2196F3] font-semibold bg-[#2196F3]/5" : "text-gray-500 hover:bg-gray-50"
+                        className={`flex items-center gap-2 px-3 py-2 text-[15px] rounded-lg transition-colors ${
+                          pathname === child.path ? "text-[#2196F3] font-semibold bg-[#2196F3]/5" : "text-gray-600 hover:bg-gray-50"
                         }`}
                       >
                          <child.icon className="w-3.5 h-3.5" strokeWidth={1.5} />
