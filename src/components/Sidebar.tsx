@@ -4,8 +4,6 @@ import {
   LayoutDashboard, FolderOpen, Users, Building2,
   BarChart3, FileText, TrendingUp, Eye, ChevronDown,
   ChevronRight, Settings, HardHat, Clock, MessageSquare, Info, Shield, ClipboardList, BookOpen, Clock3, CalendarCheck,
-  Sun, CloudRain, Hammer, Wrench, Thermometer, Map as MapIcon, Camera, Clipboard, CheckSquare, AlertTriangle, UserPlus,
-  Package, Truck, ListTodo, Paperclip, CheckCircle2, History
 } from "lucide-react";
 
 
@@ -205,155 +203,6 @@ function DashboardSubNav({ pathname }: { pathname: string }) {
   );
 }
 
-// ─── Project Detail Sub-nav ───────────────────────────────────────────────────
-function ProjectDetailSubNav({ pathname, projectName }: { pathname: string, projectName: string }) {
-  const { setSelectedProject } = useProject();
-  const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState(false);
-  const [projects, setProjects] = useState<ProjectOption[]>([]);
-  
-  // Collapsible states
-  const [dailyOpen, setDailyOpen] = useState(true);
-  const [prodOpen, setProdOpen] = useState(true);
-  const [safetyOpen, setSafetyOpen] = useState(false);
-
-  useEffect(() => {
-    fetch('/api/projects')
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          setProjects([{ id: 'all', name: 'All Projects' }, ...data]);
-        }
-      })
-      .catch(() => {});
-  }, []);
-
-  const handleProjectSelect = (name: string) => {
-    setSelectedProject(name);
-    setIsProjectDropdownOpen(false);
-  };
-
-  const NavItem = ({ label, icon: Icon, path }: { label: string, icon: any, path: string }) => {
-    const isActive = pathname === path;
-    return (
-      <Link
-        href={path}
-        className={`flex items-center gap-3 px-3 py-2 text-[15px] rounded-lg transition-all ${
-          isActive ? "bg-gray-800 text-white font-semibold" : "text-gray-600 hover:bg-gray-50"
-        }`}
-      >
-        <Icon className={`w-4 h-4 ${isActive ? "text-white" : "text-gray-400"}`} strokeWidth={1.5} />
-        <span>{label}</span>
-      </Link>
-    );
-  };
-
-  const SectionHeader = ({ label, icon: Icon, isOpen, onToggle, color = "text-[#2196F3]" }: { label: string, icon: any, isOpen: boolean, onToggle: () => void, color?: string }) => (
-    <button
-      onClick={onToggle}
-      className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-gray-50 transition-all focus:outline-none"
-    >
-      <div className="flex items-center gap-3">
-        <Icon className={`w-5 h-5 ${color}`} strokeWidth={2} />
-        <span className={`text-[15px] font-semibold ${color}`}>{label}</span>
-      </div>
-      {isOpen ? <ChevronDown className={`w-4 h-4 ${color}`} /> : <ChevronRight className={`w-4 h-4 ${color}`} />}
-    </button>
-  );
-
-  return (
-    <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
-      {/* Project Selector */}
-      <div className="p-5 border-b border-gray-100">
-        <div className="relative">
-          <button
-            onClick={() => setIsProjectDropdownOpen(!isProjectDropdownOpen)}
-            className="w-full bg-white border border-gray-200 hover:border-gray-300 px-4 py-2.5 rounded-lg text-[15px] text-left flex items-center justify-between transition-colors focus:outline-none"
-          >
-            <span className="text-gray-800 truncate font-semibold">{projectName}</span>
-            <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0 ml-2" />
-          </button>
-          {isProjectDropdownOpen && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-xl z-50 border border-gray-100 py-1 max-h-[300px] overflow-y-auto">
-              {projects.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => handleProjectSelect(p.name)}
-                  className={`w-full px-4 py-2.5 text-sm text-left hover:bg-gray-50 transition-colors ${
-                    projectName === p.name ? 'text-[#2196F3] font-semibold bg-blue-50/50' : 'text-gray-600'
-                  }`}
-                >
-                  {p.name}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Weather Widget */}
-      <div className="mx-5 my-4 bg-gray-50 rounded-xl p-4 flex items-center justify-between border border-gray-100/50">
-        <div className="flex items-center gap-3">
-          <CloudRain className="w-6 h-6 text-gray-400" />
-          <div>
-            <div className="text-lg font-bold text-gray-800">66° / 83°</div>
-            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">RAIN</div>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex-1 overflow-y-auto px-2 space-y-1 pb-6">
-        {/* Daily Logs */}
-        <div>
-          <SectionHeader label="Daily logs" icon={ClipboardList} isOpen={dailyOpen} onToggle={() => setDailyOpen(!dailyOpen)} />
-          {dailyOpen && (
-            <div className="space-y-0.5 mt-0.5">
-              <NavItem label="Work logs" icon={Clipboard} path="/daily-logs/work" />
-              <NavItem label="Notes" icon={FileText} path="/activity" />
-              <NavItem label="Attachments" icon={Paperclip} path="/daily-logs/attachments" />
-              <NavItem label="Survey" icon={ListTodo} path="/daily-logs/survey" />
-            </div>
-          )}
-        </div>
-
-        {/* Production */}
-        <div>
-          <SectionHeader label="Production" icon={Hammer} isOpen={prodOpen} onToggle={() => setProdOpen(!prodOpen)} color="text-gray-700" />
-          {prodOpen && (
-            <div className="space-y-0.5 mt-0.5">
-              <NavItem label="Time cards" icon={Clock} path="/production/time" />
-              <NavItem label="Materials" icon={Package} path="/production/materials" />
-              <NavItem label="Equipment" icon={Truck} path="/production/equipment" />
-              <NavItem label="Insights" icon={TrendingUp} path="/production/insights" />
-              <NavItem label="Map" icon={MapIcon} path="/production/map" />
-            </div>
-          )}
-        </div>
-
-        {/* Safety & QC */}
-        <div>
-          <SectionHeader label="Safety & QC" icon={HardHat} isOpen={safetyOpen} onToggle={() => setSafetyOpen(!safetyOpen)} color="text-gray-700" />
-          {safetyOpen && (
-            <div className="space-y-0.5 mt-0.5">
-              <NavItem label="Checklists" icon={CheckSquare} path="/safety/checklists" />
-              <NavItem label="Toolbox talks" icon={Users} path="/safety/talks" />
-              <NavItem label="Observations" icon={Eye} path="/safety/observations" />
-              <NavItem label="Incidents" icon={AlertTriangle} path="/safety/incidents" />
-              <NavItem label="Insights" icon={TrendingUp} path="/safety/insights" />
-            </div>
-          )}
-        </div>
-
-        <div className="h-px bg-gray-100 my-2 mx-2" />
-
-        {/* Flat items */}
-        <NavItem label="Tasks" icon={CheckCircle2} path="/tasks" />
-        <NavItem label="Project directory" icon={UserPlus} path="/projects/directory" />
-        <NavItem label="Gallery" icon={Camera} path="/projects/gallery" />
-        <NavItem label="Project settings" icon={Settings} path="/projects/settings" />
-      </div>
-    </div>
-  );
-}
 // ─── Company sub-nav panel ─────────────────────────────────────────────────────
 function CompanySubNav({ pathname }: { pathname: string }) {
   const [safetyOpen, setSafetyOpen] = useState(pathname.startsWith("/company/safety"));
@@ -438,10 +287,8 @@ function CompanySubNav({ pathname }: { pathname: string }) {
 }
 
 
-
 export function Sidebar() {
   const pathname = usePathname();
-  const { selectedProject } = useProject();
   const activeSection = getActiveSection(pathname);
 
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -511,9 +358,7 @@ export function Sidebar() {
 
       {/* ── Sub-nav panel ── */}
       {activeSection === "dashboard" && (
-        selectedProject && selectedProject !== "All Projects" 
-          ? <ProjectDetailSubNav pathname={pathname} projectName={selectedProject} />
-          : <DashboardSubNav pathname={pathname} />
+        <DashboardSubNav pathname={pathname} />
       )}
       {activeSection === "company" && (
         <CompanySubNav pathname={pathname} />
