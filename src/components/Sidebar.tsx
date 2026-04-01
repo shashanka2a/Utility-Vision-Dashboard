@@ -4,6 +4,7 @@ import {
   LayoutDashboard, FolderOpen, Users, Building2,
   BarChart3, FileText, TrendingUp, Eye, ChevronDown,
   ChevronRight, Settings, HardHat, Clock, MessageSquare, Info, Shield, ClipboardList, BookOpen, Clock3, CalendarCheck,
+  Calendar, Briefcase, ListTodo, MapPin, Image, Layers, Construction, Stethoscope, CloudRain, StickyNote, Paperclip, Clipboard
 } from "lucide-react";
 
 
@@ -27,26 +28,56 @@ const MAIN_NAV = [
 
 // ─── Dashboard sub-nav ─────────────────────────────────────────────────────────
 const DASHBOARD_SUB = [
-  {
-    label: "Activity",
-    icon: BarChart3,
-    path: "/activity",
-    children: null,
-  },
-  {
-    label: "Reports",
-    icon: FileText,
-    path: "/reports",
-    children: null,
-  },
-  {
-    label: "Insights",
-    icon: TrendingUp,
-    path: null,
+  { label: "Activity", icon: BarChart3, path: "/activity" },
+  { label: "Reports",  icon: FileText,  path: "/reports" },
+  { 
+    label: "Insights", 
+    icon: TrendingUp, 
+    path: "/insights",
     children: [
-      { label: "Daily logs", path: "/daily-logs" },
-    ],
+      { label: "Daily summary", path: "/insights/summary" },
+    ]
   },
+];
+
+const PROJECT_DETAIL_NAV = [
+  {
+    label: "Daily logs",
+    icon: Calendar,
+    children: [
+      { label: "Work logs", path: "/projects/daily-logs/work" },
+      { label: "Notes", path: "/projects/daily-logs/notes" },
+      { label: "Attachments", path: "/projects/daily-logs/attachments" },
+      { label: "Survey", path: "/projects/daily-logs/survey" },
+    ]
+  },
+  {
+    label: "Production",
+    icon: Construction,
+    children: [
+      { label: "Time cards", path: "/projects/production/time-cards" },
+      { label: "Materials", path: "/projects/production/materials" },
+      { label: "Equipment", path: "/projects/production/equipment" },
+      { label: "Insights", path: "/projects/production/insights" },
+      { label: "Map", path: "/projects/production/map" },
+    ]
+  },
+  {
+    label: "Safety & QC",
+    icon: Briefcase, // Bag with cross icon variant
+    children: [
+      { label: "Checklists", path: "/projects/safety/checklists" },
+      { label: "Toolbox talks", path: "/projects/safety/toolbox-talks" },
+      { label: "Observations", path: "/projects/safety/observations" },
+      { label: "Incidents", path: "/projects/safety/incidents" },
+      { label: "Insights", path: "/projects/safety/insights" },
+    ]
+  },
+  {
+    label: "Tasks",
+    icon: ListTodo,
+    path: "/projects/tasks",
+  }
 ];
 
 // Projects will be fetched from DB
@@ -62,8 +93,6 @@ function getActiveSection(pathname: string) {
   if (["/activity", "/reports", "/daily-logs", "/live-views"].some(p => pathname.startsWith(p))) return "dashboard";
   if (pathname.startsWith("/projects"))  return "projects";
   if (pathname.startsWith("/directory")) return "directory";
-  if (pathname.startsWith("/time"))      return "time";
-  if (pathname.startsWith("/messages"))  return "messages";
   if (pathname.startsWith("/company"))   return "company";
   return "dashboard";
 }
@@ -72,11 +101,15 @@ function getActiveSection(pathname: string) {
 // ─── Dashboard sub-nav panel ───────────────────────────────────────────────────
 function DashboardSubNav({ pathname }: { pathname: string }) {
   const { selectedProject, setSelectedProject } = useProject();
-  const [insightsOpen, setInsightsOpen] = useState(pathname.startsWith("/daily-logs"));
+  const [openGroups, setOpenGroups] = useState<string[]>(["Daily logs", "Production", "Safety & QC"]);
   const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState(false);
   const [projects, setProjects] = useState<ProjectOption[]>([]);
 
-  // Fetch real projects from DB
+  // Simple state to toggle sections
+  const toggleGroup = (label: string) => {
+    setOpenGroups(prev => prev.includes(label) ? prev.filter(g => g !== label) : [...prev, label]);
+  };
+
   useEffect(() => {
     fetch('/api/projects')
       .then(res => res.json())
@@ -93,22 +126,22 @@ function DashboardSubNav({ pathname }: { pathname: string }) {
     setIsProjectDropdownOpen(false);
   };
 
+  const isDetailView = selectedProject !== "All Projects";
+  const navItems = isDetailView ? PROJECT_DETAIL_NAV : DASHBOARD_SUB;
+
   return (
     <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
-      {/* Project Selector (Top of white panel) */}
-      <div className="p-5 border-b border-gray-100 mb-4">
+      {/* Project Selector */}
+      <div className="p-5 pb-3">
         <div className="relative">
           <button
             type="button"
             onClick={() => setIsProjectDropdownOpen(!isProjectDropdownOpen)}
             className="w-full bg-white border border-gray-300 hover:border-gray-400 px-4 py-2.5 rounded-lg text-[15px] text-left flex items-center justify-between transition-colors focus:outline-none"
           >
-            <span className="text-gray-500 truncate font-medium">{selectedProject}</span>
-            <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0 ml-2" />
+            <span className="text-gray-900 truncate font-medium">{selectedProject}</span>
+            <ChevronDown className={`w-4 h-4 text-gray-400 flex-shrink-0 ml-2 transition-transform ${isProjectDropdownOpen ? 'rotate-180' : ''}`} />
           </button>
-
-
-
           
           {isProjectDropdownOpen && (
             <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-lg z-20 border border-gray-100 py-1 max-h-[300px] overflow-y-auto">
@@ -118,7 +151,7 @@ function DashboardSubNav({ pathname }: { pathname: string }) {
                   type="button"
                   onClick={() => handleProjectSelect(project.name)}
                   className={`w-full px-4 py-2 text-sm text-left hover:bg-gray-50 transition-colors ${
-                    selectedProject === project.name ? 'text-[#FF6633] font-medium bg-orange-50/50' : 'text-gray-600'
+                    selectedProject === project.name ? 'text-[#2196F3] font-medium bg-[#2196F3]/5' : 'text-gray-600'
                   }`}
                 >
                   {project.name}
@@ -129,54 +162,69 @@ function DashboardSubNav({ pathname }: { pathname: string }) {
         </div>
       </div>
 
-
+      {/* Weather Widget (Only in detail view) */}
+      {isDetailView && (
+        <div className="px-5 pb-5">
+           <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <CloudRain className="w-8 h-8 text-blue-400" />
+                <div>
+                   <div className="text-gray-900 font-bold text-base leading-none">66° / 83°</div>
+                   <div className="text-[10px] text-gray-400 font-bold uppercase mt-1 tracking-wider">Rain expected</div>
+                </div>
+              </div>
+           </div>
+        </div>
+      )}
 
       {/* Nav Items */}
-      <div className="flex-1 overflow-y-auto w-full px-3 space-y-4">
-        {DASHBOARD_SUB.map((item) => {
-          if (item.children) {
-            // Expandable group (Insights)
-            const anyChildActive = item.children.some(c => pathname.startsWith(c.path));
+      <div className="flex-1 overflow-y-auto w-full px-3 space-y-0.5">
+        {navItems.map((item) => {
+          const isGroup = !!item.children;
+          const isOpen = openGroups.includes(item.label);
+          const isActiveGroup = item.children?.some(c => pathname.startsWith(c.path));
+          const isActive = item.path && pathname.startsWith(item.path);
+
+          if (isGroup) {
             return (
-              <div key={item.label} className="mb-0.5">
+              <div key={item.label} className="mb-1">
                 <button
-                  onClick={() => setInsightsOpen(o => !o)}
+                  onClick={() => toggleGroup(item.label)}
                   className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-[15px] rounded-lg transition-all focus:outline-none ${
-                    anyChildActive
-                      ? "text-gray-900 font-semibold bg-gray-50"
+                    isActiveGroup
+                      ? "text-[#2196F3] bg-[#2196F3]/5 font-semibold"
                       : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                   }`}
                 >
-                  <item.icon className="w-5 h-5 flex-shrink-0 fill-current/5" strokeWidth={1.5} />
+                  <item.icon className={`w-5 h-5 flex-shrink-0 ${isActiveGroup ? "text-[#2196F3]" : "text-gray-400"}`} strokeWidth={1.5} />
                   <span className="flex-1 text-left">{item.label}</span>
-                  {insightsOpen
+                  {isOpen
                     ? <ChevronDown className="w-4 h-4 text-gray-400" />
                     : <ChevronRight className="w-4 h-4 text-gray-400" />}
                 </button>
-                {insightsOpen && (
-                  <div className="pl-11 pb-1 mt-0.5 space-y-0.5">
-                    {item.children.map(child => (
-                      <Link
-                        key={child.path}
-                        href={child.path}
-                        className={`block py-2 pr-4 pl-2 text-[14px] rounded-md transition-colors ${
-                          pathname.startsWith(child.path)
-                            ? "text-[#FF6633] font-semibold bg-orange-50/50"
-                            : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
-                        }`}
-                      >
-                        {child.label}
-                      </Link>
-                    ))}
+                {isOpen && (
+                  <div className="mt-0.5 space-y-0.5">
+                    {item.children?.map(child => {
+                       const isChildActive = pathname.startsWith(child.path);
+                       return (
+                        <Link
+                          key={child.path}
+                          href={child.path}
+                          className={`block ml-11 py-2 pr-4 pl-0 text-[14px] rounded-lg transition-colors ${
+                            isChildActive
+                              ? "bg-[#252525] text-[#2196F3] font-semibold pl-4 ml-8"
+                              : "text-gray-500 hover:text-gray-900"
+                          }`}
+                        >
+                          {child.label}
+                        </Link>
+                       );
+                    })}
                   </div>
                 )}
               </div>
             );
           }
-
-          // Regular item
-          const isActive = item.path && pathname.startsWith(item.path);
-          const isActivity = item.label === "Activity";
 
           return (
             <Link
@@ -189,17 +237,15 @@ function DashboardSubNav({ pathname }: { pathname: string }) {
               }`}
             >
               <item.icon 
-                className={`w-5 h-5 flex-shrink-0 ${isActive ? "text-[#2196F3] fill-[#2196F3]/10" : "fill-current/5"}`} 
+                className={`w-5 h-5 flex-shrink-0 ${isActive ? "text-[#2196F3] fill-[#2196F3]/10" : "text-gray-400"}`} 
                 strokeWidth={1.5} 
               />
               <span>{item.label}</span>
             </Link>
           );
-
         })}
       </div>
     </div>
-
   );
 }
 
