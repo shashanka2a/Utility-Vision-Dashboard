@@ -143,6 +143,7 @@ function ProjectSubNav({ currentView }: { currentView: string }) {
   const { selectedProject, selectedDate, setSelectedDate } = useProject();
   const [isWeatherOpen, setIsWeatherOpen] = useState(false);
   const [projectAddress, setProjectAddress] = useState("");
+  const [zipCode, setZipCode] = useState("");
 
   useEffect(() => {
     if (selectedProject && selectedProject !== "All Projects") {
@@ -151,8 +152,9 @@ function ProjectSubNav({ currentView }: { currentView: string }) {
         .then((projects: any[]) => {
           const project = projects.find(p => p.name === selectedProject);
           if (project) {
-            const addr = [project.city, project.state, project.zip_code, project.country].filter(Boolean).join(', ');
+            const addr = [project.city, project.state, project.country].filter(Boolean).join(', ');
             setProjectAddress(addr || "Location not set");
+            setZipCode(project.zip_code || "");
           }
         });
     }
@@ -190,6 +192,7 @@ function ProjectSubNav({ currentView }: { currentView: string }) {
         onClose={() => setIsWeatherOpen(false)}
         projectName={selectedProject}
         projectAddress={projectAddress}
+        zipCode={zipCode}
         selectedDate={selectedDate}
         onDateChange={setSelectedDate}
       />
