@@ -17,43 +17,23 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   
-  // Initialize from search params if present, otherwise default to current date
-  const [selectedProject, setSelectedProjectState] = useState("All Projects");
-  const [selectedDate, setSelectedDateState] = useState<Date>(new Date());
-
-  useEffect(() => {
-    const projectParam = searchParams.get("project");
-    if (projectParam) {
-      setSelectedProjectState(projectParam);
-    }
-    const dateParam = searchParams.get("date");
-    if (dateParam) {
-      // Parse as local date to avoid timezone shift
-      const parsed = new Date(dateParam + "T12:00:00");
-      if (!isNaN(parsed.getTime())) {
-        setSelectedDateState(parsed);
-      }
-    }
-  }, [searchParams]);
+  // Primary truth: URL search parameters
+  const selectedProject = searchParams.get("project") || "All Projects";
+  
+  const dateParam = searchParams.get("date");
+  const selectedDate = dateParam ? new Date(dateParam + "T12:00:00") : new Date();
 
   const setSelectedProject = (name: string) => {
-    setSelectedProjectState(name);
-    
-    // Update URL to keep it persistent across refreshes
     const params = new URLSearchParams(searchParams.toString());
     if (name === "All Projects") {
       params.delete("project");
     } else {
       params.set("project", name);
     }
-    
-    // Use replace to avoid bloating history
     router.replace(`${pathname}?${params.toString()}`);
   };
 
   const setSelectedDate = (date: Date) => {
-    setSelectedDateState(date);
-    
     const params = new URLSearchParams(searchParams.toString());
     // Format as YYYY-MM-DD in local time
     const yyyy = date.getFullYear();
@@ -64,7 +44,12 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <ProjectContext.Provider value={{ selectedProject, setSelectedProject, selectedDate, setSelectedDate }}>
+    <ProjectContext.Provider value={{ 
+      selectedProject, 
+      setSelectedProject, 
+      selectedDate: isNaN(selectedDate.getTime()) ? new Date() : selectedDate, 
+      setSelectedDate 
+    }}>
       {children}
     </ProjectContext.Provider>
   );
