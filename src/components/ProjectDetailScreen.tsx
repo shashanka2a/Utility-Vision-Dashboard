@@ -30,24 +30,8 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
     }, 500);
     return () => clearTimeout(timer);
   }, [dataType, selectedProject]);
-
   return (
     <div className="h-full flex flex-col bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-8 py-6 flex-shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-[#2196F3]/10 rounded-lg">
-            <Icon className="w-6 h-6 text-[#2196F3]" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
-            <p className="text-sm text-gray-500 mt-1">
-              Project: <span className="font-semibold text-gray-700">{selectedProject}</span>
-            </p>
-          </div>
-        </div>
-      </div>
-
       {/* Content */}
       <div className="flex-1 overflow-auto p-8 flex flex-col items-center justify-center">
         {loading ? (
@@ -70,7 +54,6 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
           </div>
         ) : (
           <div className="w-full max-w-5xl">
-            {/* Real data layout would go here */}
             <p className="text-gray-500">Displaying {data.length} items...</p>
           </div>
         )}
