@@ -1,16 +1,15 @@
 "use client";
 
-import {
-  LayoutDashboard, FolderOpen, Users, Building2,
-  BarChart3, FileText, TrendingUp, Eye, ChevronDown,
-  ChevronRight, Settings, HardHat, Clock, MessageSquare, Info, Shield, ClipboardList, BookOpen, Clock3, CalendarCheck,
-  Calendar, Briefcase, ListTodo, MapPin, Image, Layers, Construction, Stethoscope, CloudRain, StickyNote, Paperclip, Clipboard
-} from "lucide-react";
-
-
-import Link from "next/link";
 import { useState, useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { 
+  BarChart3, FileText, TrendingUp, Calendar, LayoutDashboard, 
+  Briefcase, Plus, Search, ChevronDown, ListTodo, Users, Image, Settings,
+  Construction, Briefcase as SafetyIcon, Shield, Info, ClipboardList, ChevronRight,
+  FolderOpen, Building2, Eye, HardHat, Clock, MessageSquare, BookOpen, Clock3, 
+  CalendarCheck, MapPin, Layers, Stethoscope, CloudRain, StickyNote, Paperclip, Clipboard, LayoutGrid
+} from "lucide-react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { useProject } from "@/context/ProjectContext";
 
 
@@ -104,6 +103,7 @@ function getActiveSection(pathname: string) {
 
 // ─── Dashboard sub-nav panel ───────────────────────────────────────────────────
 function DashboardSubNav({ pathname }: { pathname: string }) {
+  const router = useRouter();
   const { selectedProject, setSelectedProject } = useProject();
   const [openGroups, setOpenGroups] = useState<string[]>(["Daily logs", "Production", "Safety & QC"]);
   const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState(false);
@@ -128,6 +128,11 @@ function DashboardSubNav({ pathname }: { pathname: string }) {
   const handleProjectSelect = (name: string) => {
     setSelectedProject(name);
     setIsProjectDropdownOpen(false);
+    if (name !== 'All Projects') {
+      router.push('/projects/dashboard');
+    } else {
+      router.push('/activity');
+    }
   };
 
   const isDetailView = selectedProject !== "All Projects";

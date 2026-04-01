@@ -2,6 +2,8 @@
 
 import { Clock, Plus, Pencil, Trash2, X, Loader2, Search, LayoutGrid, List } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { useProject } from "@/context/ProjectContext";
 
 interface Project {
   id: string;
@@ -58,6 +60,8 @@ const PROJECT_TEMPLATES = [
 ];
 
 export function ProjectsScreen() {
+  const router = useRouter();
+  const { setSelectedProject } = useProject();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -231,8 +235,16 @@ export function ProjectsScreen() {
                   {/* Top row: name + status + date + actions */}
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-black text-base truncate">{project.name}</h3>
-                      <p className="text-sm text-gray-500 mt-0.5">{project.job_number}</p>
+                      <button 
+                        onClick={() => {
+                          setSelectedProject(project.name);
+                          router.push('/projects/dashboard');
+                        }}
+                        className="text-left group/title focus:outline-none"
+                      >
+                        <h3 className="font-semibold text-black text-base truncate group-hover/title:text-[#2196F3] transition-colors">{project.name}</h3>
+                        <p className="text-sm text-gray-500 mt-0.5 group-hover/title:text-gray-600">{project.job_number}</p>
+                      </button>
                       {(project.city || project.state) && (
                         <p className="text-xs text-gray-400 mt-0.5">
                           {[project.city, project.state].filter(Boolean).join(', ')}
@@ -294,7 +306,15 @@ export function ProjectsScreen() {
                 >
                   {/* Name + location */}
                   <div className="min-w-0">
-                    <p className="font-medium text-gray-900 text-sm truncate">{project.name}</p>
+                    <button 
+                      onClick={() => {
+                        setSelectedProject(project.name);
+                        router.push('/projects/dashboard');
+                      }}
+                      className="text-left group/list focus:outline-none"
+                    >
+                      <p className="font-medium text-gray-900 text-sm truncate group-hover/list:text-[#2196F3] transition-colors">{project.name}</p>
+                    </button>
                     {(project.city || project.state) && (
                       <p className="text-xs text-gray-400 mt-0.5">{[project.city, project.state].filter(Boolean).join(', ')}</p>
                     )}
