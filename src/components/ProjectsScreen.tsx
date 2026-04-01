@@ -9,6 +9,7 @@ interface Project {
   id: string;
   name: string;
   job_number: string;
+  client_name?: string;
   acres_completed: number;
   last_activity: string | null;
   status: 'active' | 'paused' | 'completed';
@@ -27,6 +28,7 @@ interface Project {
 type FormData = {
   name: string;
   job_number: string;
+  client_name: string;
   street_address: string;
   city: string;
   state: string;
@@ -42,6 +44,7 @@ const today = new Date().toISOString().split('T')[0];
 const emptyForm: FormData = {
   name: '',
   job_number: '',
+  client_name: '',
   street_address: '',
   city: '',
   state: '',
@@ -70,6 +73,7 @@ export function ProjectsScreen() {
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [formData, setFormData] = useState<FormData>(emptyForm);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [searchQuery, setSearchQuery] = useState("");
 
   const fetchProjects = useCallback(async () => {
     setLoading(true);
@@ -99,6 +103,7 @@ export function ProjectsScreen() {
     setFormData({
       name: project.name,
       job_number: project.job_number,
+      client_name: project.client_name ?? '',
       street_address: project.street_address ?? '',
       city: project.city ?? '',
       state: project.state ?? '',
@@ -159,6 +164,14 @@ export function ProjectsScreen() {
     setFormData(prev => ({ ...prev, [field]: value }));
 
   const activeCount = projects.filter(p => p.status === 'active').length;
+  
+  const filteredProjects = projects.filter(p => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return p.name.toLowerCase().includes(q) || 
+           (p.job_number && p.job_number.toLowerCase().includes(q)) || 
+           (p.client_name && p.client_name.toLowerCase().includes(q));
+  });
 
   return (
     <div className="h-full flex flex-col">
@@ -168,13 +181,25 @@ export function ProjectsScreen() {
           <div>
             <h1 className="text-2xl font-semibold text-black">Projects</h1>
             <p className="text-sm text-gray-500 mt-1">
-              <span className="font-medium text-gray-700">{projects.length}</span> total &middot;{' '}
+              <span className="font-medium text-gray-700">{filteredProjects.length}</span> total &middot;{' '}
               <span className="font-medium text-[#4CAF50]">{activeCount} active</span>
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            {/* Search */}
+            <div className="relative">
+              <input 
+                type="text" 
+                placeholder="Search projects..." 
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm w-[250px] focus:outline-none focus:ring-2 focus:ring-[#FF6633]/20 focus:border-[#FF6633] transition-all"
+              />
+              <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            </div>
+
             {/* View toggle */}
-            <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
+            <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden ml-1">
               <button
                 onClick={() => setViewMode('grid')}
                 className={`p-2 transition-colors focus:outline-none ${
@@ -198,7 +223,7 @@ export function ProjectsScreen() {
             </div>
             <button
               onClick={openAdd}
-              className="flex items-center gap-2 px-4 py-2.5 bg-[#FF6633] text-white rounded-lg font-medium hover:bg-[#E55A2B] transition-all shadow-sm hover:shadow focus:outline-none focus:ring-2 focus:ring-[#FF6633] focus:ring-offset-2"
+              className="flex items-center gap-2 px-4 py-2 bg-[#FF6633] text-white rounded-lg font-medium hover:bg-[#E55A2B] transition-all shadow-sm hover:shadow focus:outline-none focus:ring-2 focus:ring-[#FF6633] focus:ring-offset-2 ml-1"
             >
               <Plus className="w-4 h-4" />
               <span>Add Project</span>
@@ -227,7 +252,7 @@ export function ProjectsScreen() {
           viewMode === 'grid' ? (
             /* ── GRID VIEW ── */
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 content-start">
-              {projects.map(project => (
+              {filteredProjects.map(project => (
                 <div
                   key={project.id}
                   className="bg-white border border-gray-300 rounded-lg p-5 hover:shadow-lg transition-all duration-200"
@@ -297,11 +322,11 @@ export function ProjectsScreen() {
                 <span className="w-20 text-center">Status</span>
                 <span className="w-16 text-center">Actions</span>
               </div>
-              {projects.map((project, i) => (
+              {filteredProjects.map((project, i) => (
                 <div
                   key={project.id}
                   className={`grid grid-cols-[1fr_auto_auto_auto_auto] items-center px-4 py-3 gap-4 hover:bg-gray-50 transition-colors ${
-                    i < projects.length - 1 ? 'border-b border-gray-100' : ''
+                    i < filteredProjects.length - 1 ? 'border-b border-gray-100' : ''
                   }`}
                 >
                   {/* Name + location */}
@@ -539,6 +564,21 @@ export function ProjectsScreen() {
                 </div>
 
 
+
+                {/* Row 7: Client Name (full width) */}
+                <div>
+                  <label htmlFor="p-client" className="block text-sm font-medium text-gray-700 mb-1">
+                    Client Name
+                  </label>
+                  <input
+                    id="p-client"
+                    type="text"
+                    value={formData.client_name}
+                    onChange={e => set('client_name', e.target.value)}
+                    placeholder="Enter client name"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6633] focus:border-transparent transition-all placeholder-gray-400"
+                  />
+                </div>
 
                 {/* Row 8: Project template (full width) */}
                 <div>

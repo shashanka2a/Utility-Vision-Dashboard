@@ -133,6 +133,7 @@ export function DirectoryScreen() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [formData, setFormData] = useState<FormData>(emptyForm);
+  const [searchQuery, setSearchQuery] = useState("");
 
 
   // ── data loading ──────────────────────────────────────────────────────────
@@ -271,6 +272,15 @@ export function DirectoryScreen() {
 
   const activeCount = employees.filter(e => e.status === 'active').length;
 
+  const filteredEmployees = employees.filter(e => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return e.name.toLowerCase().includes(q) || 
+           (e.employee_id && e.employee_id.toLowerCase().includes(q)) || 
+           (e.email && e.email.toLowerCase().includes(q)) ||
+           (e.role && roleLabel(e.role).toLowerCase().includes(q));
+  });
+
   // ─── render ──────────────────────────────────────────────────────────────
 
   return (
@@ -282,17 +292,29 @@ export function DirectoryScreen() {
           <div>
             <h1 className="text-2xl font-semibold text-black">Directory</h1>
             <p className="text-sm text-gray-500 mt-1">
-              <span className="font-medium text-gray-700">{employees.length}</span> team members &middot;{' '}
+              <span className="font-medium text-gray-700">{filteredEmployees.length}</span> team members &middot;{' '}
               <span className="font-medium text-[#4CAF50]">{activeCount} active</span>
             </p>
           </div>
-          <button
-            onClick={openAdd}
-            className="flex items-center gap-2 px-4 py-2.5 bg-[#FF6633] text-white rounded-lg font-medium hover:bg-[#E55A2B] transition-all shadow-sm hover:shadow focus:outline-none focus:ring-2 focus:ring-[#FF6633] focus:ring-offset-2"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Employee</span>
-          </button>
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <input 
+                type="text" 
+                placeholder="Search directory..." 
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm w-[250px] focus:outline-none focus:ring-2 focus:ring-[#FF6633]/20 focus:border-[#FF6633] transition-all"
+              />
+              <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            </div>
+            <button
+              onClick={openAdd}
+              className="flex items-center gap-2 px-4 py-2 bg-[#FF6633] text-white rounded-lg font-medium hover:bg-[#E55A2B] transition-all shadow-sm hover:shadow focus:outline-none focus:ring-2 focus:ring-[#FF6633] focus:ring-offset-2"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Employee</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -327,7 +349,7 @@ export function DirectoryScreen() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {employees.map(emp => (
+                {filteredEmployees.map(emp => (
                   <tr key={emp.id} className="hover:bg-gray-50 transition-colors">
                     {/* Name */}
                     <td className="px-6 py-4">

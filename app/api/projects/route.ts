@@ -16,7 +16,7 @@ export async function GET() {
 export async function POST(request: Request) {
   const body = await request.json();
   const {
-    name, job_number, acres_completed, status,
+    name, job_number, client_name, acres_completed, status,
     street_address, city, state, zip_code, country,
     start_date, end_date, project_groups, project_template,
   } = body;
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
   const { data, error } = await supabaseServer
     .from('projects')
     .insert([{
-      name, job_number, acres_completed, status,
+      name, job_number, client_name, acres_completed, status,
       street_address, city, state, zip_code, country,
       start_date, end_date, project_groups, project_template,
     }])

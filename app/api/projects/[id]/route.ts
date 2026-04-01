@@ -9,7 +9,7 @@ export async function PUT(
   const { id } = await context.params;
   const body = await request.json();
   const {
-    name, job_number,
+    name, job_number, client_name,
     street_address, city, state, zip_code, country,
     start_date, end_date, project_template,
   } = body;
@@ -17,7 +17,7 @@ export async function PUT(
   const { data, error } = await supabaseServer
     .from('projects')
     .update({
-      name, job_number,
+      name, job_number, client_name,
       street_address, city, state, zip_code, country,
       start_date: start_date || null,
       end_date: end_date || null,
