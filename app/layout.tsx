@@ -17,9 +17,6 @@ export const metadata: Metadata = {
     title: "Utility Vision | Dashboard",
     description: "Utility Vision field activity, reports, daily logs, and project management.",
   },
-  icons: {
-    icon: "/favicon.ico",
-  },
 };
 
 export const viewport: Viewport = {

@@ -19,10 +19,11 @@ export default function Icon() {
           justifyContent: 'center',
           background: '#FF6633',
           color: 'white',
-          fontSize: 16,
-          fontWeight: 800,
-          borderRadius: 8,
+          fontSize: 18,
+          fontWeight: 900,
+          borderRadius: '25%', // More rounded/playful Look
           fontFamily: 'sans-serif',
+          letterSpacing: '-0.05em',
         }}
       >
         UV
