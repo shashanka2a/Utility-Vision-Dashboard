@@ -12,6 +12,7 @@ export async function PUT(
     name, job_number, client_name,
     street_address, city, state, zip_code, country,
     start_date, end_date, project_template,
+    status, acres_completed
   } = body;
 
   const { data, error } = await supabaseServer
@@ -22,6 +23,8 @@ export async function PUT(
       start_date: start_date || null,
       end_date: end_date || null,
       project_template,
+      status: status || undefined,
+      acres_completed: acres_completed !== undefined ? acres_completed : undefined
     })
     .eq('id', id)
     .select()

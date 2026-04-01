@@ -180,7 +180,10 @@ export function ProjectsScreen() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(formData),
         });
-        if (!res.ok) throw new Error('Update failed');
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || 'Update failed');
+        }
         const updated = await res.json();
         setProjects(prev => prev.map(p => p.id === updated.id ? updated : p));
       } else {
@@ -189,7 +192,10 @@ export function ProjectsScreen() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(formData),
         });
-        if (!res.ok) throw new Error('Create failed');
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || 'Create failed');
+        }
         const created = await res.json();
         setProjects(prev => [created, ...prev]);
       }

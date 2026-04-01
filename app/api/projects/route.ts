@@ -24,9 +24,13 @@ export async function POST(request: Request) {
   const { data, error } = await supabaseServer
     .from('projects')
     .insert([{
-      name, job_number, client_name, acres_completed, status,
+      name, job_number, client_name, 
+      acres_completed: acres_completed || 0, 
+      status: status || 'active',
       street_address, city, state, zip_code, country,
-      start_date, end_date, project_groups, project_template,
+      start_date: start_date || null, 
+      end_date: end_date || null, 
+      project_groups, project_template,
     }])
     .select()
     .single();

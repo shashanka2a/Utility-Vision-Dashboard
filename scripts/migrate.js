@@ -159,6 +159,13 @@ const migrations = [
       );
     `,
   },
+  {
+    name: '008_add_client_name_to_projects',
+    sql: `
+      ALTER TABLE public.projects
+        ADD COLUMN IF NOT EXISTS client_name TEXT;
+    `,
+  },
 ];
 
 
