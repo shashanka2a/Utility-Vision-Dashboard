@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, X, Loader2, Search, ChevronDown, MoreHorizontal } from "lucide-react";
+import { Plus, X, Loader2, Search, ChevronDown, MoreHorizontal, LayoutGrid, List } from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -134,6 +134,7 @@ export function DirectoryScreen() {
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [formData, setFormData] = useState<FormData>(emptyForm);
   const [searchQuery, setSearchQuery] = useState("");
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
 
   // ── data loading ──────────────────────────────────────────────────────────
@@ -307,6 +308,31 @@ export function DirectoryScreen() {
               />
               <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
             </div>
+            
+            {/* View toggle */}
+            <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-2 transition-colors focus:outline-none ${
+                  viewMode === 'grid' ? 'bg-gray-100 text-gray-900' : 'text-gray-400 hover:bg-gray-50'
+                }`}
+                aria-label="Grid view"
+                title="Grid view"
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-2 transition-colors focus:outline-none ${
+                  viewMode === 'list' ? 'bg-gray-100 text-gray-900' : 'text-gray-400 hover:bg-gray-50'
+                }`}
+                aria-label="List view"
+                title="List view"
+              >
+                <List className="w-4 h-4" />
+              </button>
+            </div>
+
             <button
               onClick={openAdd}
               className="flex items-center gap-2 px-4 py-2 bg-[#FF6633] text-white rounded-lg font-medium hover:bg-[#E55A2B] transition-all shadow-sm hover:shadow focus:outline-none focus:ring-2 focus:ring-[#FF6633] focus:ring-offset-2"
@@ -335,90 +361,172 @@ export function DirectoryScreen() {
             <p className="text-sm">Click &ldquo;Add Employee&rdquo; to get started.</p>
           </div>
         ) : (
-          <div className="bg-white border border-gray-300 rounded-lg overflow-hidden shadow-sm">
-            <table className="w-full">
-              <thead className="bg-gray-100 border-b border-gray-300">
-                <tr>
-                  <th className="text-left px-6 py-3.5 text-xs font-semibold text-gray-700 uppercase tracking-wider">Name</th>
-                  <th className="text-left px-6 py-3.5 text-xs font-semibold text-gray-700 uppercase tracking-wider">EID</th>
-                  <th className="text-left px-6 py-3.5 text-xs font-semibold text-gray-700 uppercase tracking-wider">Email / Phone</th>
-                  <th className="text-left px-6 py-3.5 text-xs font-semibold text-gray-700 uppercase tracking-wider">Classification</th>
-                  <th className="text-left px-6 py-3.5 text-xs font-semibold text-gray-700 uppercase tracking-wider">Role</th>
-                  <th className="text-left px-6 py-3.5 text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
-                  <th className="w-10"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {filteredEmployees.map(emp => (
-                  <tr key={emp.id} className="hover:bg-gray-50 transition-colors">
-                    {/* Name */}
-                    <td className="px-6 py-4">
-                      <button
-                        onClick={() => openEdit(emp)}
-                        className="flex items-center gap-3 text-left hover:underline focus:outline-none"
-                      >
-                        <div className="w-9 h-9 bg-gradient-to-br from-[#FF6633] to-[#E55A2B] rounded-full flex items-center justify-center text-sm font-semibold text-white shadow-sm flex-shrink-0">
-                          {emp.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                        </div>
-                        <span className="font-medium text-black text-sm">{emp.name}</span>
-                      </button>
-                    </td>
-                    {/* EID */}
-                    <td className="px-6 py-4 text-sm text-gray-500">{emp.employee_id || '–'}</td>
-                    {/* Email / Phone */}
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-700">{emp.email || ''}</div>
-                      {emp.phone && <div className="text-sm text-gray-500">{emp.phone}</div>}
-                      {!emp.email && !emp.phone && <span className="text-sm text-gray-400">—</span>}
-                    </td>
-                    {/* Classification */}
-                    <td className="px-6 py-4 text-sm text-gray-700">{emp.classification || '–'}</td>
-                    {/* Role */}
-                    <td className="px-6 py-4 text-sm text-gray-700">{roleLabel(emp.role)}</td>
-                    {/* Status */}
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
-                        emp.status === 'active' ? 'bg-[#E8F5E9] text-[#4CAF50]' : 'bg-gray-100 text-gray-700'
-                      }`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${emp.status === 'active' ? 'bg-[#4CAF50]' : 'bg-gray-500'}`} />
-                        {emp.status.charAt(0).toUpperCase() + emp.status.slice(1)}
-                      </span>
-                    </td>
-                    {/* ⋯ Menu */}
-                    <td className="px-3 py-4">
-                      <div className="relative flex justify-end" ref={menuOpenId === emp.id ? menuRef : null}>
-                        <button
-                          onClick={() => setMenuOpenId(menuOpenId === emp.id ? null : emp.id)}
-                          className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-[#FF6633]"
-                          aria-label="More options"
-                        >
-                          <MoreHorizontal className="w-4 h-4 text-gray-500" />
-                        </button>
-
-                        {menuOpenId === emp.id && (
-                          <div className="absolute right-0 top-8 z-30 bg-white border border-gray-200 rounded-lg shadow-xl min-w-[160px] py-1 overflow-hidden">
-                            <button
-                              onClick={() => handleToggleStatus(emp)}
-                              className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                            >
-                              {emp.status === 'active' ? 'Make inactive' : 'Make active'}
-                            </button>
-                            <div className="border-t border-gray-100 my-1" />
-                            <button
-                              onClick={() => handleDelete(emp)}
-                              className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </td>
+          viewMode === 'list' ? (
+            <div className="bg-white border border-gray-300 rounded-lg overflow-hidden shadow-sm">
+              <table className="w-full">
+                <thead className="bg-gray-100 border-b border-gray-300">
+                  <tr>
+                    <th className="text-left px-6 py-3.5 text-xs font-semibold text-gray-700 uppercase tracking-wider">Name</th>
+                    <th className="text-left px-6 py-3.5 text-xs font-semibold text-gray-700 uppercase tracking-wider">EID</th>
+                    <th className="text-left px-6 py-3.5 text-xs font-semibold text-gray-700 uppercase tracking-wider">Email / Phone</th>
+                    <th className="text-left px-6 py-3.5 text-xs font-semibold text-gray-700 uppercase tracking-wider">Classification</th>
+                    <th className="text-left px-6 py-3.5 text-xs font-semibold text-gray-700 uppercase tracking-wider">Role</th>
+                    <th className="text-left px-6 py-3.5 text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
+                    <th className="w-10"></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {filteredEmployees.map(emp => (
+                    <tr key={emp.id} className="hover:bg-gray-50 transition-colors">
+                      {/* Name */}
+                      <td className="px-6 py-4">
+                        <button
+                          onClick={() => openEdit(emp)}
+                          className="flex items-center gap-3 text-left hover:underline focus:outline-none"
+                        >
+                          <div className="w-9 h-9 bg-gradient-to-br from-[#FF6633] to-[#E55A2B] rounded-full flex items-center justify-center text-sm font-semibold text-white shadow-sm flex-shrink-0">
+                            {emp.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                          </div>
+                          <span className="font-medium text-black text-sm">{emp.name}</span>
+                        </button>
+                      </td>
+                      {/* EID */}
+                      <td className="px-6 py-4 text-sm text-gray-500">{emp.employee_id || '–'}</td>
+                      {/* Email / Phone */}
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-gray-700">{emp.email || ''}</div>
+                        {emp.phone && <div className="text-sm text-gray-500">{emp.phone}</div>}
+                        {!emp.email && !emp.phone && <span className="text-sm text-gray-400">—</span>}
+                      </td>
+                      {/* Classification */}
+                      <td className="px-6 py-4 text-sm text-gray-700">{emp.classification || '–'}</td>
+                      {/* Role */}
+                      <td className="px-6 py-4 text-sm text-gray-700">{roleLabel(emp.role)}</td>
+                      {/* Status */}
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
+                          emp.status === 'active' ? 'bg-[#E8F5E9] text-[#4CAF50]' : 'bg-gray-100 text-gray-700'
+                        }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${emp.status === 'active' ? 'bg-[#4CAF50]' : 'bg-gray-500'}`} />
+                          {emp.status.charAt(0).toUpperCase() + emp.status.slice(1)}
+                        </span>
+                      </td>
+                      {/* ⋯ Menu */}
+                      <td className="px-3 py-4">
+                        <div className="relative flex justify-end" ref={menuOpenId === emp.id ? menuRef : null}>
+                          <button
+                            onClick={() => setMenuOpenId(menuOpenId === emp.id ? null : emp.id)}
+                            className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-[#FF6633]"
+                            aria-label="More options"
+                          >
+                            <MoreHorizontal className="w-4 h-4 text-gray-500" />
+                          </button>
+
+                          {menuOpenId === emp.id && (
+                            <div className="absolute right-0 top-8 z-30 bg-white border border-gray-200 rounded-lg shadow-xl min-w-[160px] py-1 overflow-hidden">
+                              <button
+                                onClick={() => handleToggleStatus(emp)}
+                                className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                              >
+                                {emp.status === 'active' ? 'Make inactive' : 'Make active'}
+                              </button>
+                              <div className="border-t border-gray-100 my-1" />
+                              <button
+                                onClick={() => handleDelete(emp)}
+                                className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 content-start">
+              {filteredEmployees.map(emp => (
+                <div key={emp.id} className="bg-white border border-gray-300 rounded-xl p-5 hover:shadow-lg transition-all duration-200 relative group">
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-gradient-to-br from-[#FF6633] to-[#E55A2B] rounded-full flex items-center justify-center text-sm font-semibold text-white shadow-sm flex-shrink-0">
+                        {emp.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                      </div>
+                      <div>
+                        <button onClick={() => openEdit(emp)} className="font-semibold text-black text-base text-left group-hover:text-[#2196F3] transition-colors focus:outline-none truncate max-w-[160px]">
+                          {emp.name}
+                        </button>
+                        <p className="text-sm text-gray-500">{roleLabel(emp.role)}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="relative flex flex-col items-end gap-2" ref={menuOpenId === emp.id ? menuRef : null}>
+                      {/* Menu Button */}
+                      <button
+                        onClick={() => setMenuOpenId(menuOpenId === emp.id ? null : emp.id)}
+                        className="p-1 hover:bg-gray-100 rounded transition-colors focus:outline-none"
+                      >
+                        <MoreHorizontal className="w-5 h-5 text-gray-400" />
+                      </button>
+
+                      {menuOpenId === emp.id && (
+                        <div className="absolute right-0 top-8 z-30 bg-white border border-gray-200 rounded-lg shadow-xl min-w-[150px] py-1">
+                          <button
+                            onClick={() => handleToggleStatus(emp)}
+                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                          >
+                            {emp.status === 'active' ? 'Make inactive' : 'Make active'}
+                          </button>
+                          <div className="border-t border-gray-100 my-1" />
+                          <button
+                            onClick={() => handleDelete(emp)}
+                            className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5 mt-4">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500">Employee ID</span>
+                      <span className="font-medium text-gray-900">{emp.employee_id || '–'}</span>
+                    </div>
+                    {emp.email && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-500">Email</span>
+                        <a href={`mailto:${emp.email}`} className="font-medium text-[#2196F3] truncate max-w-[180px] hover:underline">{emp.email}</a>
+                      </div>
+                    )}
+                    {emp.phone && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-500">Phone</span>
+                        <a href={`tel:${emp.phone}`} className="font-medium text-[#2196F3] hover:underline">{emp.phone}</a>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500">Classification</span>
+                      <span className="font-medium text-gray-900">{emp.classification || '–'}</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 pt-4 border-t border-gray-100 flex items-center justify-between">
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                      emp.status === 'active' ? 'bg-[#E8F5E9] text-[#4CAF50]' : 'bg-gray-100 text-gray-600'
+                    }`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${emp.status === 'active' ? 'bg-[#4CAF50]' : 'bg-gray-400'}`} />
+                      {emp.status.charAt(0).toUpperCase() + emp.status.slice(1)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
         )}
       </div>
 

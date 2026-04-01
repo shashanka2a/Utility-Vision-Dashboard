@@ -75,6 +75,47 @@ export function ProjectsScreen() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [searchQuery, setSearchQuery] = useState("");
 
+  const [addressSearchQuery, setAddressSearchQuery] = useState("");
+  const [addressResults, setAddressResults] = useState<any[]>([]);
+  const [isSearchingAddress, setIsSearchingAddress] = useState(false);
+
+  useEffect(() => {
+    if (!addressSearchQuery || addressSearchQuery.length < 3) {
+      setAddressResults([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setIsSearchingAddress(true);
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(addressSearchQuery)}&format=json&addressdetails=1&countrycodes=us,ca`);
+        if (res.ok) {
+          const data = await res.json();
+          setAddressResults(data || []);
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setIsSearchingAddress(false);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [addressSearchQuery]);
+
+  const selectAddress = (result: any) => {
+    const p = result.address;
+    const street = [p.house_number, p.road].filter(Boolean).join(" ") || p.hamlet || p.suburb || "";
+    setFormData(prev => ({
+      ...prev,
+      street_address: street,
+      city: p.city || p.town || p.village || "",
+      state: p.state || "",
+      zip_code: p.postcode || "",
+      country: p.country || "United States",
+    }));
+    setAddressSearchQuery("");
+    setAddressResults([]);
+  };
+
   const fetchProjects = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -455,10 +496,31 @@ export function ProjectsScreen() {
                       <input
                         id="p-search"
                         type="text"
+                        value={addressSearchQuery}
+                        onChange={(e) => setAddressSearchQuery(e.target.value)}
                         placeholder="Search address"
                         className="w-full pl-3 pr-9 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6633] focus:border-transparent transition-all placeholder-gray-400"
                       />
-                      <Search className="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      {isSearchingAddress ? (
+                        <Loader2 className="w-4 h-4 text-[#FF6633] animate-spin absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      ) : (
+                         <Search className="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      )}
+                      
+                      {addressResults.length > 0 && (
+                        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden divide-y divide-gray-50 max-h-48 overflow-y-auto">
+                          {addressResults.map((result: any, i: number) => (
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={() => selectAddress(result)}
+                              className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 focus:bg-gray-50 focus:outline-none transition-colors"
+                            >
+                              {result.display_name}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div>
