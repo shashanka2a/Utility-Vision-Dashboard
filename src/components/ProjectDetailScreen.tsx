@@ -113,7 +113,10 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
                       {note.metrics?.find((m: any) => m.label?.toLowerCase().includes('category'))?.value || "General Notes"}
                     </div>
                     <div className="text-[14px] text-gray-600 max-w-full truncate">
-                      {note.metrics?.find((m: any) => m.label?.toLowerCase() === 'description')?.value || note.action || "No description provided"}
+                      {note.metrics?.find((m: any) => {
+                        const l = m.label?.toLowerCase() || '';
+                        return l === 'description' || l === 'note' || l === 'content' || l === 'details' || l === 'comment';
+                      })?.value || note.action || "No description provided"}
                     </div>
                     <div className="text-[14px] text-gray-500 whitespace-nowrap">
                       {note.photos?.length ? `${note.photos.length} files` : "—"}
