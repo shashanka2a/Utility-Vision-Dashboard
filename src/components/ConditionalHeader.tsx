@@ -1,13 +1,13 @@
 "use client";
 
-import { useProject } from "@/context/ProjectContext";
+import { usePathname } from "next/navigation";
 import { DashboardHeader } from "./DashboardHeader";
 
 export function ConditionalHeader() {
-  const { selectedProject } = useProject();
+  const pathname = usePathname();
 
-  // Only show the date/action bar when a real project is selected
-  if (selectedProject === "All Projects") return null;
+  // Show the date/action topbar ONLY when viewing a specific project's dashboard
+  if (!pathname.startsWith("/projects/dashboard")) return null;
 
   return <DashboardHeader />;
 }
