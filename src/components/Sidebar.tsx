@@ -344,8 +344,9 @@ function ProjectSelectorDropdown() {
 export function Sidebar() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const activeSection = getActiveSection(pathname);
-  const { selectedProject } = useProject();
+  const { selectedProject, setSelectedProject } = useProject();
 
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
@@ -362,6 +363,22 @@ export function Sidebar() {
 
         {MAIN_NAV.map(({ id, label, icon: Icon, path }) => {
           const isActive = activeSection === id;
+          // Dashboard icon resets project selection so Activity shows all projects
+          if (id === "dashboard") {
+            return (
+              <button
+                key={id}
+                onClick={() => { setSelectedProject("All Projects"); router.push(path); }}
+                title={label}
+                className={`flex flex-col items-center gap-1.5 w-16 py-3 rounded-xl transition-all ${
+                  isActive ? "bg-gray-700/80 text-white" : "text-gray-400 hover:bg-gray-800 hover:text-gray-200"
+                }`}
+              >
+                <Icon className={`w-5 h-5 ${isActive ? "fill-white/10" : "fill-current/5"}`} strokeWidth={1.5} />
+                <span className="text-[10px] font-semibold leading-none">{label}</span>
+              </button>
+            );
+          }
           return (
             <Link
               key={id}
