@@ -108,6 +108,15 @@ export function DashboardHeader() {
 
   const formattedDate = format(selectedDate, "EEE d MMM yyyy");
 
+  const getSignatureStatus = (date: Date) => {
+    const dayStr = format(date, "yyyy-MM-dd");
+    if (["2026-03-18", "2026-03-25", "2026-03-26", "2026-03-27", "2026-03-30", "2026-03-31"].includes(dayStr)) return "signed";
+    if (['2026-03-02', '2026-03-09', '2026-03-16', '2026-03-23'].includes(dayStr)) return "draft";
+    return "none";
+  };
+
+  const sigStatus = getSignatureStatus(selectedDate);
+
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       // If clicking inside the calendar container, don't close it
@@ -178,20 +187,40 @@ export function DashboardHeader() {
 
       {/* Right side: Actions */}
       <div className="flex items-center gap-4">
-        {/* Example signature status based on screenshot */}
-        <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
-           <PenTool className="w-3.5 h-3.5 text-green-500" />
-           <div className="text-[11px] leading-tight">
-             <span className="text-gray-500">Signed by </span>
-             <span className="font-bold text-gray-800">ARTIFACT EMPLOYEE</span>
-             <br/>
-             <span className="text-gray-500 font-medium">on 10th Mar 2026</span>
-           </div>
-        </div>
-
-        <button className="px-4 py-1.5 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 hover:bg-gray-50 transition-colors shadow-sm">
-          Unsign
-        </button>
+        {sigStatus === 'signed' ? (
+          <>
+            <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
+               <PenTool className="w-3.5 h-3.5 text-green-500" />
+               <div className="text-[11px] leading-tight">
+                 <span className="text-gray-500">Signed by </span>
+                 <span className="font-bold text-gray-800">ARTIFACT EMPLOYEE</span>
+                 <br/>
+                 <span className="text-gray-500 font-medium">on {format(selectedDate, "do MMM yyyy")}</span>
+               </div>
+            </div>
+            <button className="px-4 py-1.5 bg-white border border-gray-200 rounded-lg text-[13px] font-semibold text-gray-700 hover:bg-gray-50 transition-colors shadow-sm">
+              Unsign
+            </button>
+          </>
+        ) : sigStatus === 'draft' ? (
+          <>
+            <div className="flex items-center gap-2 bg-yellow-50 px-3 py-1.5 rounded-lg border border-yellow-200">
+               <div className="w-2.5 h-[3px] rounded-full bg-yellow-400" />
+               <div className="text-[11px] leading-tight">
+                 <span className="text-yellow-700 font-semibold">Unsigned Draft</span>
+                 <br/>
+                 <span className="text-yellow-600 font-medium">Awaiting Signature</span>
+               </div>
+            </div>
+            <button className="px-4 py-1.5 bg-[#FF6633] text-white rounded-lg text-[13px] font-semibold hover:bg-[#E55A2B] transition-colors shadow-sm focus:outline-none">
+              Sign Report
+            </button>
+          </>
+        ) : (
+          <button className="px-4 py-1.5 bg-[#FF6633] text-white rounded-lg text-[13px] font-semibold hover:bg-[#E55A2B] transition-colors shadow-sm focus:outline-none">
+            Sign Report
+          </button>
+        )}
 
         <div className="flex items-center gap-2 ml-1">
           <button className="p-2 bg-[#00A3FF] text-white rounded-lg shadow-sm hover:bg-[#0092E6] transition-colors">
