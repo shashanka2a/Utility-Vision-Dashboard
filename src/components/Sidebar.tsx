@@ -9,7 +9,7 @@ import {
   CalendarCheck, MapPin, Layers, Stethoscope, CloudRain, StickyNote, Paperclip, Clipboard, LayoutGrid
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useProject } from "@/context/ProjectContext";
 
 
@@ -44,43 +44,34 @@ const PROJECT_DETAIL_NAV = [
     label: "Daily logs",
     icon: Calendar,
     children: [
-      { label: "Work logs", path: "/projects/daily-logs/work" },
-      { label: "Notes", path: "/projects/daily-logs/notes" },
-      { label: "Attachments", path: "/projects/daily-logs/attachments" },
-      { label: "Survey", path: "/projects/daily-logs/survey" },
+      { label: "Work logs",   view: "work-logs" },
+      { label: "Notes",       view: "notes" },
+      { label: "Attachments", view: "attachments" },
+      { label: "Survey",      view: "survey" },
     ]
   },
   {
     label: "Dashboard",
     icon: LayoutDashboard,
-    path: "/projects/dashboard",
+    view: "activity",
   },
   {
     label: "Safety & QC",
     icon: Briefcase,
     children: [
-      { label: "Checklists", path: "/projects/safety/checklists" },
-      { label: "Toolbox talks", path: "/projects/safety/toolbox-talks" },
-      { label: "Observations", path: "/projects/safety/observations" },
-      { label: "Incidents", path: "/projects/safety/incidents" },
-      { label: "Insights", path: "/projects/safety/insights" },
+      { label: "Checklists",    view: "checklists" },
+      { label: "Toolbox talks", view: "toolbox-talks" },
+      { label: "Observations",  view: "observations" },
+      { label: "Incidents",     view: "incidents" },
+      { label: "Insights",      view: "insights" },
     ]
   },
   {
-    label: "Directory",
-    icon: Users,
-    path: "/projects/directory",
-  },
+    label: "Directory", icon: Users,     view: "directory" },
   {
-    label: "Gallery",
-    icon: Image,
-    path: "/projects/gallery",
-  },
+    label: "Gallery",   icon: Image,     view: "gallery" },
   {
-    label: "Settings",
-    icon: Settings,
-    path: "/projects/settings",
-  }
+    label: "Settings",  icon: Settings,  view: "settings" },
 ];
 
 // Projects will be fetched from DB
@@ -102,12 +93,14 @@ function getActiveSection(pathname: string) {
 
 
 // ─── Dashboard sub-nav panel ───────────────────────────────────────────────────
-function DashboardSubNav({ pathname }: { pathname: string }) {
+function DashboardSubNav({ pathname, searchParams }: { pathname: string; searchParams: URLSearchParams | null }) {
   const router = useRouter();
   const { selectedProject, setSelectedProject } = useProject();
-  const [openGroups, setOpenGroups] = useState<string[]>(["Daily logs", "Production", "Safety & QC"]);
+  const [openGroups, setOpenGroups] = useState<string[]>(["Daily logs", "Safety & QC"]);
   const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState(false);
   const [projects, setProjects] = useState<ProjectOption[]>([]);
+
+  const currentView = searchParams?.get('view') ?? 'activity';
 
   // Simple state to toggle sections
   const toggleGroup = (label: string) => {
@@ -129,7 +122,8 @@ function DashboardSubNav({ pathname }: { pathname: string }) {
     setSelectedProject(name);
     setIsProjectDropdownOpen(false);
     if (name !== 'All Projects') {
-      router.push('/projects/dashboard');
+      // Navigate to project dashboard only if not already there
+      router.push('/projects/dashboard?view=activity');
     } else {
       router.push('/activity');
     }
@@ -191,8 +185,19 @@ function DashboardSubNav({ pathname }: { pathname: string }) {
         {navItems.map((item) => {
           const isGroup = !!item.children;
           const isOpen = openGroups.includes(item.label);
-          const isActiveGroup = item.children?.some(c => pathname.startsWith(c.path));
-          const isActive = 'path' in item && item.path && pathname.startsWith(item.path as string);
+
+          // Determine active state — works for both path-based and view-based items
+          const itemView = 'view' in item ? item.view : null;
+          const itemPath = 'path' in item ? item.path : null;
+          const isActive = itemView
+            ? currentView === itemView
+            : itemPath ? pathname.startsWith(itemPath) : false;
+
+          const isActiveGroup = item.children?.some(c => {
+            const cView = 'view' in c ? c.view : null;
+            const cPath = 'path' in c ? c.path : null;
+            return cView ? currentView === cView : cPath ? pathname.startsWith(cPath) : false;
+          });
 
           if (isGroup) {
             return (
@@ -214,11 +219,14 @@ function DashboardSubNav({ pathname }: { pathname: string }) {
                 {isOpen && (
                   <div className="mt-0.5 space-y-0.5">
                     {item.children?.map(child => {
-                       const isChildActive = pathname.startsWith(child.path);
-                       return (
+                      const cView = 'view' in child ? child.view : null;
+                      const cPath = 'path' in child ? child.path : null;
+                      const isChildActive = cView ? currentView === cView : cPath ? pathname.startsWith(cPath) : false;
+                      const href = cView ? `/projects/dashboard?view=${cView}` : (cPath ?? '#');
+                      return (
                         <Link
-                          key={child.path}
-                          href={child.path}
+                          key={child.label}
+                          href={href}
                           className={`block ml-11 py-2 pr-4 pl-0 text-[14px] rounded-lg transition-colors ${
                             isChildActive
                               ? "bg-[#252525] text-[#2196F3] font-semibold pl-4 ml-8"
@@ -227,7 +235,7 @@ function DashboardSubNav({ pathname }: { pathname: string }) {
                         >
                           {child.label}
                         </Link>
-                       );
+                      );
                     })}
                   </div>
                 )}
@@ -235,19 +243,21 @@ function DashboardSubNav({ pathname }: { pathname: string }) {
             );
           }
 
+          // Leaf item
+          const href = itemView ? `/projects/dashboard?view=${itemView}` : (itemPath ?? '#');
           return (
             <Link
               key={item.label}
-              href={item.path ?? "#"}
+              href={href}
               className={`flex items-center gap-3 px-3.5 py-2.5 text-[15px] rounded-lg transition-all mb-0.5 focus:outline-none ${
                 isActive
                   ? "text-[#2196F3] font-semibold bg-[#2196F3]/5"
                   : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
               }`}
             >
-              <item.icon 
-                className={`w-5 h-5 flex-shrink-0 ${isActive ? "text-[#2196F3] fill-[#2196F3]/10" : "text-gray-400"}`} 
-                strokeWidth={1.5} 
+              <item.icon
+                className={`w-5 h-5 flex-shrink-0 ${isActive ? "text-[#2196F3] fill-[#2196F3]/10" : "text-gray-400"}`}
+                strokeWidth={1.5}
               />
               <span>{item.label}</span>
             </Link>
@@ -344,6 +354,7 @@ function CompanySubNav({ pathname }: { pathname: string }) {
 
 export function Sidebar() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const activeSection = getActiveSection(pathname);
 
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -413,7 +424,7 @@ export function Sidebar() {
 
       {/* ── Sub-nav panel ── */}
       {activeSection === "dashboard" && (
-        <DashboardSubNav pathname={pathname} />
+        <DashboardSubNav pathname={pathname} searchParams={searchParams} />
       )}
       {activeSection === "company" && (
         <CompanySubNav pathname={pathname} />
