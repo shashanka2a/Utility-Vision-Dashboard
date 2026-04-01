@@ -10,6 +10,7 @@ import {
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useProject } from "@/context/ProjectContext";
+import { WeatherModal } from "./WeatherModal";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 interface ProjectOption { id: string; name: string; }
@@ -139,7 +140,23 @@ const PROJECT_NAV = [
 ];
 
 function ProjectSubNav({ currentView }: { currentView: string }) {
-  const { selectedProject } = useProject();
+  const { selectedProject, selectedDate, setSelectedDate } = useProject();
+  const [isWeatherOpen, setIsWeatherOpen] = useState(false);
+  const [projectAddress, setProjectAddress] = useState("");
+
+  useEffect(() => {
+    if (selectedProject && selectedProject !== "All Projects") {
+      fetch(`/api/projects`)
+        .then(res => res.json())
+        .then((projects: any[]) => {
+          const project = projects.find(p => p.name === selectedProject);
+          if (project) {
+            const addr = [project.city, project.state, project.zip_code, project.country].filter(Boolean).join(', ');
+            setProjectAddress(addr || "Location not set");
+          }
+        });
+    }
+  }, [selectedProject]);
   
   // Start with only the group containing the active view being open
   const defaultOpen = PROJECT_NAV.find(group => 
@@ -153,14 +170,29 @@ function ProjectSubNav({ currentView }: { currentView: string }) {
   return (
     <div className="flex-1 overflow-hidden flex flex-col bg-white">      {/* Weather widget */}
       <div className="px-4 pt-4 pb-3">
-        <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 flex items-center gap-3">
-          <CloudRain className="w-8 h-8 text-blue-400 flex-shrink-0" />
-          <div>
-            <div className="text-gray-900 font-bold text-base leading-none">66° / 83°</div>
+        <button 
+          onClick={() => setIsWeatherOpen(true)}
+          className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 flex items-center gap-3 hover:bg-gray-100 hover:border-gray-300 transition-all text-left group/weather"
+        >
+          <div className="bg-blue-50 p-2 rounded-lg group-hover/weather:bg-blue-100 transition-colors">
+            <CloudRain className="w-6 h-6 text-blue-500 flex-shrink-0" />
+          </div>
+          <div className="flex-1">
+            <div className="text-gray-900 font-bold text-base leading-none">89°<span className="text-gray-400 font-normal ml-0.5">/58°</span></div>
             <div className="text-[10px] text-gray-400 font-bold uppercase mt-1 tracking-wider">Rain expected</div>
           </div>
-        </div>
+          <ChevronRight className="w-4 h-4 text-gray-300 group-hover/weather:text-gray-500 transition-all" />
+        </button>
       </div>
+
+      <WeatherModal 
+        isOpen={isWeatherOpen}
+        onClose={() => setIsWeatherOpen(false)}
+        projectName={selectedProject}
+        projectAddress={projectAddress}
+        selectedDate={selectedDate}
+        onDateChange={setSelectedDate}
+      />
 
       {/* Nav items */}
       <div className="flex-1 overflow-y-auto px-3 space-y-0.5">
