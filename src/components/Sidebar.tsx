@@ -52,8 +52,13 @@ const PROJECT_DETAIL_NAV = [
     ]
   },
   {
+    label: "Dashboard",
+    icon: LayoutDashboard,
+    path: "/projects/dashboard",
+  },
+  {
     label: "Safety & QC",
-    icon: Briefcase, // Bag with cross icon variant
+    icon: Briefcase,
     children: [
       { label: "Checklists", path: "/projects/safety/checklists" },
       { label: "Toolbox talks", path: "/projects/safety/toolbox-talks" },
@@ -62,6 +67,21 @@ const PROJECT_DETAIL_NAV = [
       { label: "Insights", path: "/projects/safety/insights" },
     ]
   },
+  {
+    label: "Directory",
+    icon: Users,
+    path: "/projects/directory",
+  },
+  {
+    label: "Gallery",
+    icon: Image,
+    path: "/projects/gallery",
+  },
+  {
+    label: "Settings",
+    icon: Settings,
+    path: "/projects/settings",
+  }
 ];
 
 // Projects will be fetched from DB
