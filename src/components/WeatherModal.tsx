@@ -97,7 +97,9 @@ export function WeatherModal({
           end_date: dateStr,
           hourly: "temperature_2m,relative_humidity_2m,precipitation,weather_code,wind_speed_10m",
           daily: "temperature_2m_max,temperature_2m_min,sunrise,sunset",
-          timezone: "auto"
+          timezone: "auto",
+          temperature_unit: "fahrenheit",
+          wind_speed_unit: "mph"
         });
 
         const weatherRes = await fetch(`${endpoint}?${weatherParams.toString()}`);
@@ -140,7 +142,7 @@ export function WeatherModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-[1000px] p-0 overflow-hidden bg-[#1A365D] border-none shadow-2xl">
+      <DialogContent className="sm:max-w-[1000px] w-[95vw] p-0 overflow-hidden bg-[#1A365D] border-none shadow-2xl">
         <DialogHeader className="p-6 bg-white flex flex-row items-center justify-between border-b border-gray-100">
           <div className="flex flex-col">
             <DialogTitle className="text-xl font-bold text-gray-900">Project weather conditions</DialogTitle>

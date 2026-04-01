@@ -5,12 +5,13 @@ import {
   BarChart3, FileText, TrendingUp, Calendar, LayoutDashboard,
   Briefcase, ChevronDown, Users, Image, Settings,
   Shield, Info, ClipboardList, ChevronRight,
-  FolderOpen, CloudRain, BookOpen, Clock3, CalendarCheck,
+  FolderOpen, CloudRain, BookOpen, Clock3, CalendarCheck, Sun, Cloud,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useProject } from "@/context/ProjectContext";
 import { WeatherModal } from "./WeatherModal";
+import { format } from "date-fns";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 interface ProjectOption { id: string; name: string; }
@@ -144,6 +145,38 @@ function ProjectSubNav({ currentView }: { currentView: string }) {
   const [isWeatherOpen, setIsWeatherOpen] = useState(false);
   const [projectAddress, setProjectAddress] = useState("");
   const [zipCode, setZipCode] = useState("");
+  const [sidebarWeather, setSidebarWeather] = useState<{ high: number; low: number; code: number } | null>(null);
+
+  useEffect(() => {
+    if (!zipCode || !selectedDate) return;
+
+    const dateStr = format(selectedDate, "yyyy-MM-dd");
+    const isHistorical = new Date(dateStr) < new Date(new Date().toDateString());
+    const endpoint = isHistorical 
+      ? `https://archive-api.open-meteo.com/v1/archive`
+      : `https://api.open-meteo.com/v1/forecast`;
+
+    // 1. First get lat/long for zip
+    fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${zipCode}&count=1`)
+      .then(r => r.json())
+      .then(geo => {
+        if (geo.results?.[0]) {
+          const { latitude, longitude } = geo.results[0];
+          return fetch(`${endpoint}?latitude=${latitude}&longitude=${longitude}&start_date=${dateStr}&end_date=${dateStr}&daily=temperature_2m_max,temperature_2m_min,weather_code&timezone=auto&temperature_unit=fahrenheit`);
+        }
+      })
+      .then(r => r?.json())
+      .then(data => {
+        if (data?.daily) {
+          setSidebarWeather({
+            high: Math.round(data.daily.temperature_2m_max[0]),
+            low: Math.round(data.daily.temperature_2m_min[0]),
+            code: data.daily.weather_code[0]
+          });
+        }
+      })
+      .catch(console.error);
+  }, [zipCode, selectedDate]);
 
   useEffect(() => {
     if (selectedProject && selectedProject !== "All Projects") {
@@ -177,11 +210,24 @@ function ProjectSubNav({ currentView }: { currentView: string }) {
           className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 flex items-center gap-3 hover:bg-gray-100 hover:border-gray-300 transition-all text-left group/weather"
         >
           <div className="bg-blue-50 p-2 rounded-lg group-hover/weather:bg-blue-100 transition-colors">
-            <CloudRain className="w-6 h-6 text-blue-500 flex-shrink-0" />
+            {sidebarWeather?.code !== undefined && sidebarWeather.code >= 51 ? (
+              <CloudRain className="w-6 h-6 text-blue-500 flex-shrink-0" />
+            ) : sidebarWeather?.code !== undefined && sidebarWeather.code <= 3 ? (
+              <Sun className="w-6 h-6 text-yellow-500 flex-shrink-0" />
+            ) : (
+              <CloudRain className="w-6 h-6 text-blue-500 flex-shrink-0" />
+            )}
           </div>
           <div className="flex-1">
-            <div className="text-gray-900 font-bold text-base leading-none">89°<span className="text-gray-400 font-normal ml-0.5">/58°</span></div>
-            <div className="text-[10px] text-gray-400 font-bold uppercase mt-1 tracking-wider">Rain expected</div>
+            <div className="text-gray-900 font-bold text-base leading-none">
+              {sidebarWeather ? `${sidebarWeather.high}°` : "—"}
+              <span className="text-gray-400 font-normal ml-0.5">/{sidebarWeather ? `${sidebarWeather.low}°` : "—"}</span>
+            </div>
+            <div className="text-[10px] text-gray-400 font-bold uppercase mt-1 tracking-wider">
+              {sidebarWeather?.code !== undefined && sidebarWeather.code >= 51 ? "Rain expected" :
+               sidebarWeather?.code !== undefined && sidebarWeather.code === 0 ? "Clear skies" :
+               sidebarWeather ? "Partly Cloudy" : "Fetching weather..."}
+            </div>
           </div>
           <ChevronRight className="w-4 h-4 text-gray-300 group-hover/weather:text-gray-500 transition-all" />
         </button>
