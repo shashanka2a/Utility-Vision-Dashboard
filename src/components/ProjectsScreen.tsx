@@ -263,7 +263,7 @@ export function ProjectsScreen() {
                       <button 
                         onClick={() => {
                           setSelectedProject(project.name);
-                          router.push('/projects/dashboard');
+                          router.push(`/projects/dashboard?project=${encodeURIComponent(project.name)}&view=activity`);
                         }}
                         className="text-left group/title focus:outline-none"
                       >
@@ -334,7 +334,7 @@ export function ProjectsScreen() {
                     <button 
                       onClick={() => {
                         setSelectedProject(project.name);
-                        router.push('/projects/dashboard');
+                        router.push(`/projects/dashboard?project=${encodeURIComponent(project.name)}&view=activity`);
                       }}
                       className="text-left group/list focus:outline-none"
                     >
