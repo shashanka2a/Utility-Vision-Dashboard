@@ -5,6 +5,7 @@ import { useProject } from "@/context/ProjectContext";
 import { useRouter } from "next/navigation";
 import { Suspense } from "react";
 import { ActivityScreen } from "@/components/ActivityScreen";
+import { ReportsScreen } from "@/components/ReportsScreen";
 import { ProjectDetailScreen } from "@/components/ProjectDetailScreen";
 import {
   ClipboardList, PenTool, AlertCircle, Eye,
@@ -44,9 +45,15 @@ function ProjectDashboardContent() {
 
   // Render view in-place based on ?view= query param
   switch (view) {
+    // ── Dashboard group ──────────────────────────────────────
     case "activity":
       return <ActivityScreen />;
+    case "reports":
+      return <ReportsScreen />;
+    case "project-insights":
+      return <ProjectDetailScreen title="Insights" icon={Activity} dataType="activity" />;
 
+    // ── Daily logs ───────────────────────────────────────────
     case "work-logs":
       return <ProjectDetailScreen title="Work Logs" icon={Calendar} dataType="work-logs" />;
     case "notes":
@@ -56,6 +63,7 @@ function ProjectDashboardContent() {
     case "survey":
       return <ProjectDetailScreen title="Survey" icon={FileSpreadsheet} dataType="survey" />;
 
+    // ── Safety & QC ──────────────────────────────────────────
     case "checklists":
       return <ProjectDetailScreen title="Checklists" icon={ClipboardList} dataType="checklists" />;
     case "toolbox-talks":
@@ -64,9 +72,10 @@ function ProjectDashboardContent() {
       return <ProjectDetailScreen title="Observations" icon={Eye} dataType="observations" />;
     case "incidents":
       return <ProjectDetailScreen title="Incidents" icon={AlertCircle} dataType="incidents" />;
-    case "insights":
-      return <ProjectDetailScreen title="Insights" icon={Activity} dataType="activity" />;
+    case "safety-insights":
+      return <ProjectDetailScreen title="Safety Insights" icon={Activity} dataType="activity" />;
 
+    // ── Others ───────────────────────────────────────────────
     case "directory":
       return <ProjectDetailScreen title="Directory" icon={Users} dataType="directory" />;
     case "gallery":

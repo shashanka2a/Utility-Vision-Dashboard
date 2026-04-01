@@ -107,6 +107,14 @@ function DashboardSubNav({ pathname }: { pathname: string }) {
 // ─── Project detail sub-nav (ONLY shown on /projects/dashboard) ────────────────
 const PROJECT_NAV = [
   {
+    label: "Dashboard", icon: LayoutDashboard,
+    children: [
+      { label: "Activity",  view: "activity" },
+      { label: "Reports",   view: "reports" },
+      { label: "Insights",  view: "project-insights" },
+    ],
+  },
+  {
     label: "Daily logs", icon: Calendar,
     children: [
       { label: "Work logs",   view: "work-logs" },
@@ -115,7 +123,6 @@ const PROJECT_NAV = [
       { label: "Survey",      view: "survey" },
     ],
   },
-  { label: "Dashboard",  icon: LayoutDashboard, view: "activity" },
   {
     label: "Safety & QC", icon: Briefcase,
     children: [
@@ -123,17 +130,17 @@ const PROJECT_NAV = [
       { label: "Toolbox talks", view: "toolbox-talks" },
       { label: "Observations",  view: "observations" },
       { label: "Incidents",     view: "incidents" },
-      { label: "Insights",      view: "insights" },
+      { label: "Insights",      view: "safety-insights" },
     ],
   },
-  { label: "Directory", icon: Users,     view: "directory" },
-  { label: "Gallery",   icon: Image,     view: "gallery" },
-  { label: "Settings",  icon: Settings,  view: "settings" },
+  { label: "Directory", icon: Users,    view: "directory" },
+  { label: "Gallery",   icon: Image,    view: "gallery" },
+  { label: "Settings",  icon: Settings, view: "settings" },
 ];
 
 function ProjectSubNav({ currentView }: { currentView: string }) {
   const { selectedProject } = useProject();
-  const [openGroups, setOpenGroups] = useState<string[]>(["Daily logs", "Safety & QC"]);
+  const [openGroups, setOpenGroups] = useState<string[]>(["Dashboard", "Daily logs", "Safety & QC"]);
   const toggle = (label: string) =>
     setOpenGroups(prev => prev.includes(label) ? prev.filter(g => g !== label) : [...prev, label]);
 
