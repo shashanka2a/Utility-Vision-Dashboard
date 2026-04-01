@@ -17,9 +17,9 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   
-  // Initialize from search params if present, otherwise default to "All Projects"
+  // Initialize from search params if present, otherwise default to current date
   const [selectedProject, setSelectedProjectState] = useState("All Projects");
-  const [selectedDate, setSelectedDateState] = useState<Date>(new Date("2026-03-10T12:00:00Z")); // from reference image date
+  const [selectedDate, setSelectedDateState] = useState<Date>(new Date());
 
   useEffect(() => {
     const projectParam = searchParams.get("project");
@@ -28,7 +28,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     }
     const dateParam = searchParams.get("date");
     if (dateParam) {
-      const parsed = new Date(dateParam);
+      // Parse as local date to avoid timezone shift
+      const parsed = new Date(dateParam + "T12:00:00");
       if (!isNaN(parsed.getTime())) {
         setSelectedDateState(parsed);
       }
@@ -54,7 +55,11 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     setSelectedDateState(date);
     
     const params = new URLSearchParams(searchParams.toString());
-    params.set("date", date.toISOString().split('T')[0]);
+    // Format as YYYY-MM-DD in local time
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    params.set("date", `${yyyy}-${mm}-${dd}`);
     router.replace(`${pathname}?${params.toString()}`);
   };
 

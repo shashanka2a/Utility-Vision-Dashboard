@@ -193,7 +193,7 @@ function ProjectSubNav({ currentView }: { currentView: string }) {
                       return (
                         <Link
                           key={child.label}
-                          href={`/projects/dashboard?view=${childView}`}
+                          href={`/projects/dashboard?project=${encodeURIComponent(selectedProject)}&view=${childView}`}
                           className={`block py-2 pr-4 text-[14px] rounded-lg transition-colors ${
                             isChildActive
                               ? "bg-[#252525] text-[#2196F3] font-semibold pl-4 ml-8"
@@ -213,7 +213,7 @@ function ProjectSubNav({ currentView }: { currentView: string }) {
           return (
             <Link
               key={item.label}
-              href={`/projects/dashboard?view=${itemView}`}
+              href={`/projects/dashboard?project=${encodeURIComponent(selectedProject)}&view=${itemView}`}
               className={`flex items-center gap-3 px-3.5 py-2.5 text-[15px] rounded-lg transition-all mb-0.5 focus:outline-none ${
                 isActive ? "text-[#2196F3] font-semibold bg-[#2196F3]/5" : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
               }`}
@@ -321,7 +321,8 @@ function ProjectSelectorDropdown() {
   const select = (name: string) => {
     setSelectedProject(name);
     setOpen(false);
-    router.push('/projects/dashboard?view=activity');
+    // Explicitly navigate to dashboard with newly selected project context
+    router.push(`/projects/dashboard?project=${encodeURIComponent(name)}&view=activity`);
   };
 
   return (
