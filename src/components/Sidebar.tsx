@@ -52,17 +52,6 @@ const PROJECT_DETAIL_NAV = [
     ]
   },
   {
-    label: "Production",
-    icon: Construction,
-    children: [
-      { label: "Time cards", path: "/projects/production/time-cards" },
-      { label: "Materials", path: "/projects/production/materials" },
-      { label: "Equipment", path: "/projects/production/equipment" },
-      { label: "Insights", path: "/projects/production/insights" },
-      { label: "Map", path: "/projects/production/map" },
-    ]
-  },
-  {
     label: "Safety & QC",
     icon: Briefcase, // Bag with cross icon variant
     children: [
@@ -73,11 +62,6 @@ const PROJECT_DETAIL_NAV = [
       { label: "Insights", path: "/projects/safety/insights" },
     ]
   },
-  {
-    label: "Tasks",
-    icon: ListTodo,
-    path: "/projects/tasks",
-  }
 ];
 
 // Projects will be fetched from DB
@@ -183,7 +167,7 @@ function DashboardSubNav({ pathname }: { pathname: string }) {
           const isGroup = !!item.children;
           const isOpen = openGroups.includes(item.label);
           const isActiveGroup = item.children?.some(c => pathname.startsWith(c.path));
-          const isActive = item.path && pathname.startsWith(item.path);
+          const isActive = 'path' in item && item.path && pathname.startsWith(item.path as string);
 
           if (isGroup) {
             return (
