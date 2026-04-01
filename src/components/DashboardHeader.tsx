@@ -110,6 +110,7 @@ export function DashboardHeader() {
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
+      // If clicking inside the calendar container, don't close it
       if (calendarRef.current && !calendarRef.current.contains(e.target as Node)) {
         setCalendarOpen(false);
       }
@@ -139,11 +140,11 @@ export function DashboardHeader() {
           
           <div className="relative" ref={calendarRef}>
             <button 
-              onClick={() => setCalendarOpen(!calendarOpen)}
+              onClick={(e) => { e.stopPropagation(); setCalendarOpen(!calendarOpen); }}
               className="flex items-center gap-2 px-3 py-1.5 border border-gray-200 rounded-lg bg-white shadow-sm min-w-[180px] hover:border-gray-300 transition-colors"
             >
-               <span className="text-sm text-gray-700 font-medium flex-1 text-left">{formattedDate}</span>
-               <CalendarIcon className="w-4 h-4 text-gray-400" />
+               <span className="text-sm text-gray-700 font-medium flex-1 text-left pointer-events-none">{formattedDate}</span>
+               <CalendarIcon className="w-4 h-4 text-gray-400 pointer-events-none" />
             </button>
             
             {calendarOpen && (

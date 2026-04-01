@@ -140,13 +140,18 @@ const PROJECT_NAV = [
 
 function ProjectSubNav({ currentView }: { currentView: string }) {
   const { selectedProject } = useProject();
-  const [openGroups, setOpenGroups] = useState<string[]>(["Dashboard", "Daily logs", "Safety & QC"]);
+  
+  // Start with only the group containing the active view being open
+  const defaultOpen = PROJECT_NAV.find(group => 
+    group.children?.some(c => ('view' in c ? c.view : null) === currentView)
+  )?.label ?? "Dashboard";
+
+  const [openGroups, setOpenGroups] = useState<string[]>([defaultOpen]);
   const toggle = (label: string) =>
     setOpenGroups(prev => prev.includes(label) ? prev.filter(g => g !== label) : [...prev, label]);
 
   return (
-    <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
-      {/* Weather widget */}
+    <div className="flex-1 overflow-hidden flex flex-col bg-white">      {/* Weather widget */}
       <div className="px-4 pt-4 pb-3">
         <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 flex items-center gap-3">
           <CloudRain className="w-8 h-8 text-blue-400 flex-shrink-0" />
