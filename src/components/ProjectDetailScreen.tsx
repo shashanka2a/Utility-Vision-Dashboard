@@ -109,13 +109,13 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
               <div className="divide-y divide-gray-100">
                 {data.map((note, idx) => (
                   <div key={note.id || idx} className="grid grid-cols-[200px_1fr_150px_60px] gap-4 items-center px-6 py-4 hover:bg-gray-50/50 transition-colors">
-                    <div className="text-[14px] text-gray-700 font-medium">
+                    <div className="text-[14px] text-gray-700 font-medium whitespace-nowrap overflow-hidden text-ellipsis">
                       {note.metrics?.find((m: any) => m.label?.toLowerCase().includes('category'))?.value || "General Notes"}
                     </div>
-                    <div className="text-[14px] text-gray-600 truncate">
-                      {note.action || "No description provided"}
+                    <div className="text-[14px] text-gray-600 max-w-full truncate">
+                      {note.metrics?.find((m: any) => m.label?.toLowerCase() === 'description')?.value || note.action || "No description provided"}
                     </div>
-                    <div className="text-[14px] text-gray-500">
+                    <div className="text-[14px] text-gray-500 whitespace-nowrap">
                       {note.photos?.length ? `${note.photos.length} files` : "—"}
                     </div>
                     <div className="flex justify-end">
