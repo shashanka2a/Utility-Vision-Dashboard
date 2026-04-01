@@ -12,8 +12,8 @@ export function ConditionalHeader() {
 
   // The 'Dashboard' sections in the project sidebar have their own date selectors or don't need the top bar
   const view = searchParams.get("view");
-  const dashboardViews = ["activity", "reports", "project-insights"];
-  if (!view || dashboardViews.includes(view)) {
+  const viewsWithoutHeader = ["activity", "reports", "project-insights", "directory", "gallery", "settings"];
+  if (!view || viewsWithoutHeader.includes(view)) {
     return null;
   }
 
