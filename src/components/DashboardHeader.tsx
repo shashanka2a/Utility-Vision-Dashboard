@@ -4,30 +4,46 @@ import {
   ChevronLeft, ChevronRight, Calendar as CalendarIcon, 
   RotateCw, Moon, UserPlus, Send, ChevronDown, PenTool 
 } from "lucide-react";
-import { useState } from "react";
+import { useProject } from "@/context/ProjectContext";
+import { format, addDays, subDays } from "date-fns";
 
 export function DashboardHeader() {
-  const [date, setDate] = useState("Wed 1 Apr 2026");
+  const { selectedDate, setSelectedDate } = useProject();
+
+  const handlePrevDay = () => setSelectedDate(subDays(selectedDate, 1));
+  const handleNextDay = () => setSelectedDate(addDays(selectedDate, 1));
+  const handleToday = () => setSelectedDate(new Date());
+
+  const formattedDate = format(selectedDate, "EEE d MMM yyyy");
 
   return (
     <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 flex-shrink-0 z-10">
       {/* Left side: Date Filter */}
       <div className="flex items-center gap-2">
-        <button className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-400 font-medium hover:bg-gray-100 transition-colors">
+        <button 
+          onClick={handleToday}
+          className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-400 font-medium hover:bg-gray-100 transition-colors"
+        >
           Today
         </button>
         
         <div className="flex items-center gap-1 ml-2">
-          <button className="p-1.5 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-gray-600">
+          <button 
+            onClick={handlePrevDay}
+            className="p-1.5 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-gray-600"
+          >
             <ChevronLeft className="w-4 h-4" />
           </button>
           
           <div className="flex items-center gap-2 px-3 py-1.5 border border-gray-200 rounded-lg bg-white shadow-sm min-w-[180px]">
-             <span className="text-sm text-gray-700 font-medium flex-1">{date}</span>
+             <span className="text-sm text-gray-700 font-medium flex-1">{formattedDate}</span>
              <CalendarIcon className="w-4 h-4 text-gray-400" />
           </div>
 
-          <button className="p-1.5 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-gray-600">
+          <button 
+            onClick={handleNextDay}
+            className="p-1.5 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-gray-600"
+          >
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
