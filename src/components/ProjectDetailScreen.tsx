@@ -114,9 +114,14 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
                     </div>
                     <div className="text-[14px] text-gray-600 max-w-full truncate">
                       {note.metrics?.find((m: any) => {
-                        const l = m.label?.toLowerCase() || '';
-                        return l === 'description' || l === 'note' || l === 'content' || l === 'details' || l === 'comment';
-                      })?.value || note.action || "No description provided"}
+                        const l = (m.label || m.name || '').toLowerCase();
+                        return (
+                          l === 'description' || l === 'note' || l === 'content' || 
+                          l === 'details' || l === 'comment' || l === 'message' || 
+                          l === 'general note' || l === 'text' ||
+                          l.includes('note') || l.includes('desc')
+                        );
+                      })?.value || note.action?.replace(' in', '') || "No description provided"}
                     </div>
                     <div className="text-[14px] text-gray-500 whitespace-nowrap">
                       {note.photos?.length ? `${note.photos.length} files` : "—"}

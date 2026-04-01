@@ -35,8 +35,13 @@ export function ActivityCard({ activity }: ActivityCardProps) {
                 <span className="font-semibold text-gray-900">{activity.employeeName}</span>
                 {' '}{activity.activityType === 'Notes' ? (
                   activity.metrics?.find((m: any) => {
-                    const l = m.label?.toLowerCase() || '';
-                    return l === 'description' || l === 'note' || l === 'content' || l === 'details' || l === 'comment';
+                    const l = (m.label || m.name || '').toLowerCase();
+                    return (
+                      l === 'description' || l === 'note' || l === 'content' || 
+                      l === 'details' || l === 'comment' || l === 'message' || 
+                      l === 'general note' || l === 'text' ||
+                      l.includes('note') || l.includes('desc')
+                    );
                   })?.value || activity.action.replace(' in', '')
                 ) : (
                   activity.action.replace(' in', '')
