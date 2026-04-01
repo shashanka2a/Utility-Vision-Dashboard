@@ -150,9 +150,6 @@ export function WeatherModal({
               {projectName} | <span className="font-medium text-gray-400 normal-case">{projectAddress || zipCode}</span>
             </p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-            <X className="w-5 h-5 text-gray-500" />
-          </button>
         </DialogHeader>
 
         <div className="p-8 pb-12 text-white min-h-[500px] flex flex-col">
