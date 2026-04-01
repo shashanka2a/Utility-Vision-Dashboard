@@ -33,7 +33,14 @@ export function ActivityCard({ activity }: ActivityCardProps) {
               {/* Main Info */}
               <p className="text-[15px] text-gray-800 leading-snug">
                 <span className="font-semibold text-gray-900">{activity.employeeName}</span>
-                {' '}{activity.action.replace(' in', '')} in{' '}
+                {' '}{activity.activityType === 'Notes' ? (
+                  activity.metrics?.find((m: any) => {
+                    const l = m.label?.toLowerCase() || '';
+                    return l === 'description' || l === 'note' || l === 'content' || l === 'details' || l === 'comment';
+                  })?.value || activity.action.replace(' in', '')
+                ) : (
+                  activity.action.replace(' in', '')
+                )} in{' '}
                 <span className="text-gray-800">{activity.project}</span>
               </p>
 

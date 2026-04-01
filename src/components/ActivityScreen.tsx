@@ -301,7 +301,8 @@ export function ActivityScreen({ initialActivities }: { initialActivities?: Acti
 
     if (q && !a.employeeName.toLowerCase().includes(q) &&
              !a.project.toLowerCase().includes(q) &&
-             !a.action.toLowerCase().includes(q)) return false;
+             !a.action.toLowerCase().includes(q) &&
+             !a.metrics.some(m => m.value?.toLowerCase().includes(q))) return false;
 
     // 2. Applied Filters (Project, Member, Type)
     if (appliedFilters.projects.length && !appliedFilters.projects.includes(a.project)) return false;
