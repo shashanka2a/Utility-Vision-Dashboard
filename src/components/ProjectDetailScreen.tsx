@@ -271,9 +271,11 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
               <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Icon className="w-10 h-10 text-gray-300" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">No {title.toLowerCase()} found</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">
+                {title === "Insights" ? "No insights" : `No ${title.toLowerCase()} found`}
+              </h3>
               <p className="text-gray-500 text-sm max-w-[280px] mx-auto">
-                {emptyMessage || `There are no ${title.toLowerCase()} recorded for this project on ${format(selectedDate, "MMM d, yyyy")}.`}
+                {emptyMessage || (title === "Insights" ? "There are no automated insights gathered for this project period yet." : `There are no ${title.toLowerCase()} recorded for this project on ${format(selectedDate, "MMM d, yyyy")}.`)}
               </p>
             </div>
           ) : (
