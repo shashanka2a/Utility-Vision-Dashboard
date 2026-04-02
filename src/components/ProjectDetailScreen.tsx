@@ -78,11 +78,7 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
 
     return (
       <div className="h-full flex flex-col bg-gray-50 flex-1 overflow-hidden">
-        <div className="p-8 pb-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Project Gallery</h1>
-            <p className="text-sm text-gray-500 mt-1">Viewing all assets for {selectedProject}</p>
-          </div>
+        <div className="px-8 pt-8 pb-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
              <div className="relative w-64">
                 <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -234,49 +230,67 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
     );
   }
 
-  // Generic fallback rendering for other dataTypes
-  return (
-    <div className="h-full flex flex-col bg-gray-50 flex-1 overflow-hidden">
-      {/* Dynamic Header */}
-      <div className="p-8 pb-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">{title}</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            {data.length} records found for {selectedProject} on {format(selectedDate, "MMM d, yyyy")}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-           <button className="flex items-center gap-1.5 px-4 py-2 bg-black text-white rounded-lg text-sm font-semibold hover:bg-gray-800 transition-colors shadow-sm">
-             <Plus className="w-4 h-4" />
-             <span>New {title}</span>
-           </button>
+  // Specialized rendering for Attachments in Daily Logs
+  if (dataType === 'attachments') {
+    return (
+      <div className="h-full flex flex-col bg-gray-50 flex-1 overflow-hidden">
+        <div className="flex-1 overflow-auto p-8">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-20 text-gray-400 font-medium">
+              <Loader2 className="w-10 h-10 animate-spin mb-4" />
+              <p>Scanning project archives...</p>
+            </div>
+          ) : data.length === 0 ? (
+            <div className="max-w-md w-full text-center py-12 px-6 bg-white rounded-2xl border border-gray-100 shadow-sm mx-auto mt-10">
+              <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Icon className="w-10 h-10 text-gray-300" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900 mb-2">No attachments found</h2>
+              <p className="text-gray-500 mb-8 max-w-[280px] mx-auto text-sm">
+                There are currently no recorded attachments for this project period.
+              </p>
+            </div>
+          ) : (
+            <div className="max-w-4xl mx-auto space-y-4">
+              {data.map((item, idx) => (
+                <ActivityCard key={item.id || idx} activity={item as ActivityType} />
+              ))}
+            </div>
+          )}
         </div>
       </div>
+    );
+  }
 
-      <div className="flex-1 overflow-auto p-8 pt-2">
+  // Generic fallback rendering for other dataTypes (Work logs, Survey, etc.)
+  return (
+    <div className="h-full flex flex-col bg-gray-50 flex-1 overflow-hidden">
+      <div className="flex-1 overflow-auto p-8 flex flex-col items-center justify-center">
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-            <Loader2 className="w-10 h-10 animate-spin mb-4" />
-            <p className="text-sm font-medium">Fetching details from project history...</p>
+          <div className="flex flex-col items-center gap-3 text-gray-400">
+            <Loader2 className="w-10 h-10 animate-spin" />
+            <p className="text-sm font-medium">Fetching database data...</p>
           </div>
         ) : data.length === 0 ? (
-          <div className="max-w-md w-full text-center py-12 px-6 bg-white rounded-2xl border border-gray-100 shadow-sm mx-auto mt-10">
+          <div className="max-w-md w-full text-center py-12 px-6 bg-white rounded-2xl border border-gray-200 shadow-sm">
             <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
               <Icon className="w-10 h-10 text-gray-300" />
             </div>
             <h2 className="text-xl font-bold text-gray-900 mb-2">No {title.toLowerCase()} found</h2>
-            <p className="text-gray-500 mb-8 max-w-[280px] mx-auto">
-              There are currently no {title.toLowerCase()} recorded for this period.
+            <p className="text-gray-500 mb-8">
+              {emptyMessage || `There is currently no ${title.toLowerCase()} recorded for ${selectedProject} on ${format(selectedDate, "MMM d, yyyy")}.`}
             </p>
-            <button className="px-6 py-2.5 bg-black text-white rounded-xl font-semibold hover:bg-gray-800 transition-all shadow-md">
-              Create First Entry
+            <button className="px-6 py-2.5 bg-black text-white rounded-lg font-semibold hover:bg-gray-800 transition-all shadow-sm">
+              Create New Entry
             </button>
           </div>
         ) : (
-          <div className="max-w-4xl mx-auto space-y-4">
-            {data.map((item, idx) => (
-              <ActivityCard key={item.id || idx} activity={item as ActivityType} />
-            ))}
+          <div className="w-full max-w-5xl flex flex-col items-center justify-center py-20 text-center">
+             <div className="w-16 h-16 bg-[#2196F3]/5 rounded-full flex items-center justify-center mb-4">
+                <Icon className="w-8 h-8 text-[#2196F3]" />
+             </div>
+             <p className="text-gray-900 font-bold text-lg">Displaying {data.length} items...</p>
+             <p className="text-gray-500 text-sm mt-1 max-w-sm">Records retrieved safely. Detailed views for this module are still being integrated.</p>
           </div>
         )}
       </div>
