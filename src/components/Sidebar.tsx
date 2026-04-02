@@ -132,7 +132,6 @@ const PROJECT_NAV = [
       { label: "Toolbox talks", view: "toolbox-talks" },
       { label: "Observations",  view: "observations" },
       { label: "Incidents",     view: "incidents" },
-      { label: "Insights",      view: "safety-insights" },
     ],
   },
   { label: "Directory", icon: Users,    view: "directory" },

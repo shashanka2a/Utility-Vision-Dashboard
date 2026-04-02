@@ -54,6 +54,14 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
           filtered = filtered.filter(a => a.activityType === 'Incidents');
         } else if (dataType === 'work-logs') {
           filtered = filtered.filter(a => a.activityType?.toLowerCase().includes('log') || a.activityType === 'Daily Inspection');
+        } else if (dataType === 'survey') {
+          filtered = filtered.filter(a => a.activityType === 'Survey');
+        } else if (dataType === 'toolbox') {
+          filtered = filtered.filter(a => a.activityType === 'Toolbox Talk' || a.activityType === 'Safety Meeting');
+        } else if (dataType === 'checklists') {
+          filtered = filtered.filter(a => a.activityType?.toLowerCase().includes('checklist'));
+        } else if (dataType === 'activity') {
+          filtered = filtered.filter(a => a.action?.toLowerCase().includes('insight') || a.activityType?.toLowerCase().includes('metric'));
         }
         
         setData(filtered);
