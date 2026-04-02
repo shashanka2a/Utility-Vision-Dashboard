@@ -185,15 +185,7 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
                 <p className="text-sm">Fetching notes...</p>
               </div>
             ) : data.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 px-6">
-                <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-gray-100">
-                  <MessageSquare className="w-8 h-8 text-gray-300" />
-                </div>
-                <h3 className="text-gray-900 font-bold mb-1">No notes found</h3>
-                <p className="text-gray-500 text-sm text-center max-w-[250px]">
-                  There are no notes recorded for {selectedProject} on {format(selectedDate, "MMM d, yyyy")}.
-                </p>
-              </div>
+              <div className="flex-1" />
             ) : (
               <div className="divide-y divide-gray-100">
                 {data.map((note, idx) => (
@@ -241,15 +233,7 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
               <p>Scanning project archives...</p>
             </div>
           ) : data.length === 0 ? (
-            <div className="max-w-md w-full text-center py-12 px-6 bg-white rounded-2xl border border-gray-100 shadow-sm mx-auto mt-10">
-              <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Icon className="w-10 h-10 text-gray-300" />
-              </div>
-              <h2 className="text-xl font-bold text-gray-900 mb-2">No attachments found</h2>
-              <p className="text-gray-500 mb-8 max-w-[280px] mx-auto text-sm">
-                There are currently no recorded attachments for this project period.
-              </p>
-            </div>
+            <div className="flex-1" />
           ) : (
             <div className="max-w-4xl mx-auto space-y-4">
               {data.map((item, idx) => (
@@ -272,18 +256,7 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
             <p className="text-sm font-medium">Fetching database data...</p>
           </div>
         ) : data.length === 0 ? (
-          <div className="max-w-md w-full text-center py-12 px-6 bg-white rounded-2xl border border-gray-200 shadow-sm">
-            <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Icon className="w-10 h-10 text-gray-300" />
-            </div>
-            <h2 className="text-xl font-bold text-gray-900 mb-2">No {title.toLowerCase()} found</h2>
-            <p className="text-gray-500 mb-8">
-              {emptyMessage || `There is currently no ${title.toLowerCase()} recorded for ${selectedProject} on ${format(selectedDate, "MMM d, yyyy")}.`}
-            </p>
-            <button className="px-6 py-2.5 bg-black text-white rounded-lg font-semibold hover:bg-gray-800 transition-all shadow-sm">
-              Create New Entry
-            </button>
-          </div>
+          <div className="flex-1" />
         ) : (
           <div className="w-full max-w-5xl flex flex-col items-center justify-center py-20 text-center">
              <div className="w-16 h-16 bg-[#2196F3]/5 rounded-full flex items-center justify-center mb-4">
