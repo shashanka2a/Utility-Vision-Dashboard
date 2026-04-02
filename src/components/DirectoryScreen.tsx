@@ -1,6 +1,9 @@
 "use client";
 
-import { Plus, X, Loader2, Search, ChevronDown, MoreHorizontal, LayoutGrid, List } from "lucide-react";
+import { 
+  Plus, X, Loader2, Search, ChevronDown, MoreHorizontal, LayoutGrid, List,
+  Mail, Phone, ArrowRight, Shield, User, MapPin, Briefcase
+} from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -15,6 +18,7 @@ interface Employee {
   phone?: string;
   employee_id?: string;
   classification?: string;
+  photo_url?: string;
 }
 
 type FormData = {
@@ -447,81 +451,122 @@ export function DirectoryScreen() {
               </table>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 content-start">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 content-start">
               {filteredEmployees.map(emp => (
-                <div key={emp.id} className="bg-white border border-gray-300 rounded-xl p-5 hover:shadow-lg transition-all duration-200 relative group">
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-gradient-to-br from-[#FF6633] to-[#E55A2B] rounded-full flex items-center justify-center text-sm font-semibold text-white shadow-sm flex-shrink-0">
-                        {emp.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                      </div>
-                      <div>
-                        <button onClick={() => openEdit(emp)} className="font-semibold text-black text-base text-left group-hover:text-[#2196F3] transition-colors focus:outline-none truncate max-w-[160px]">
-                          {emp.name}
+                <div 
+                  key={emp.id} 
+                  className="bg-white border border-gray-200 rounded-2xl overflow-hidden hover:shadow-xl hover:border-gray-300 transition-all duration-300 group flex flex-col"
+                >
+                  {/* Card Header: Avatar & Basic Info */}
+                  <div className="p-6 pb-4 flex flex-col items-center text-center border-b border-gray-50 bg-gradient-to-b from-gray-50/50 to-white relative">
+                    <div className="absolute top-4 right-4">
+                      <div className="relative" ref={menuOpenId === emp.id ? menuRef : null}>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setMenuOpenId(menuOpenId === emp.id ? null : emp.id); }}
+                          className="p-1 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none"
+                        >
+                          <MoreHorizontal className="w-4 h-4 text-gray-400" />
                         </button>
-                        <p className="text-sm text-gray-500">{roleLabel(emp.role)}</p>
+                        {menuOpenId === emp.id && (
+                          <div className="absolute right-0 top-7 z-30 bg-white border border-gray-200 rounded-lg shadow-xl min-w-[150px] py-1 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                            <button
+                              onClick={() => handleToggleStatus(emp)}
+                              className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                            >
+                              {emp.status === 'active' ? 'Make inactive' : 'Make active'}
+                            </button>
+                            <div className="border-t border-gray-100 my-1" />
+                            <button
+                              onClick={() => handleDelete(emp)}
+                              className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="relative mb-4">
+                      <div className="w-20 h-20 bg-white p-1 rounded-full border border-gray-100 shadow-sm relative z-10">
+                        <div className="w-full h-full bg-gradient-to-br from-[#FF6633] to-[#E55A2B] rounded-full flex items-center justify-center text-xl font-bold text-white shadow-inner">
+                          {emp.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                        </div>
+                      </div>
+                      {/* Status Indicator pulse */}
+                      <div className={`absolute bottom-1 right-1 w-5 h-5 rounded-full border-4 border-white z-20 ${
+                        emp.status === 'active' ? 'bg-[#4CAF50]' : 'bg-gray-400'
+                      }`}>
+                        {emp.status === 'active' && <span className="absolute inset-0 rounded-full animate-ping bg-[#4CAF50] opacity-30" />}
                       </div>
                     </div>
                     
-                    <div className="relative flex flex-col items-end gap-2" ref={menuOpenId === emp.id ? menuRef : null}>
-                      {/* Menu Button */}
-                      <button
-                        onClick={() => setMenuOpenId(menuOpenId === emp.id ? null : emp.id)}
-                        className="p-1 hover:bg-gray-100 rounded transition-colors focus:outline-none"
+                    <button 
+                      onClick={() => openEdit(emp)} 
+                      className="text-lg font-bold text-gray-900 group-hover:text-[#FF6633] transition-colors line-clamp-1 mb-1"
+                    >
+                      {emp.name}
+                    </button>
+                    <div className="flex items-center gap-1.5 px-3 py-1 bg-gray-100 rounded-full text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">
+                       <Shield className="w-3 h-3" />
+                       {roleLabel(emp.role)}
+                    </div>
+                  </div>
+
+                  {/* Card Body: Important Details */}
+                  <div className="p-6 flex-1 space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">ID</p>
+                        <p className="text-sm font-semibold text-gray-800">{emp.employee_id || '—'}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">Classification</p>
+                        <p className="text-sm font-semibold text-gray-800 truncate">{emp.classification || '—'}</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                       <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">Projects</p>
+                       <div className="flex flex-wrap gap-1">
+                         {emp.assigned_projects?.length ? (
+                           emp.assigned_projects.slice(0, 2).map((p, i) => (
+                             <span key={i} className="px-2 py-0.5 bg-blue-50 text-[11px] font-medium text-blue-600 rounded">
+                               {p}
+                             </span>
+                           ))
+                         ) : <span className="text-sm text-gray-400">No project assigned</span>}
+                         {emp.assigned_projects?.length > 2 && (
+                           <span className="px-2 py-0.5 bg-gray-50 text-[11px] font-medium text-gray-500 rounded">
+                             +{emp.assigned_projects.length - 2} more
+                           </span>
+                         )}
+                       </div>
+                    </div>
+                  </div>
+
+                  {/* Card Footer: Quick Actions */}
+                  <div className="px-3 pb-4 pt-2 mt-auto">
+                    <div className="grid grid-cols-2 gap-2">
+                      <a 
+                        href={emp.email ? `mailto:${emp.email}` : '#'}
+                        className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm font-semibold transition-all ${
+                          emp.email ? 'border-gray-100 bg-gray-50 text-gray-700 hover:bg-white hover:shadow-md hover:border-gray-200' : 'bg-gray-50 opacity-40 cursor-not-allowed text-gray-400 border-transparent'
+                        }`}
                       >
-                        <MoreHorizontal className="w-5 h-5 text-gray-400" />
-                      </button>
-
-                      {menuOpenId === emp.id && (
-                        <div className="absolute right-0 top-8 z-30 bg-white border border-gray-200 rounded-lg shadow-xl min-w-[150px] py-1">
-                          <button
-                            onClick={() => handleToggleStatus(emp)}
-                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                          >
-                            {emp.status === 'active' ? 'Make inactive' : 'Make active'}
-                          </button>
-                          <div className="border-t border-gray-100 my-1" />
-                          <button
-                            onClick={() => handleDelete(emp)}
-                            className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      )}
+                        <Mail className="w-4 h-4" />
+                        Email
+                      </a>
+                      <a 
+                        href={emp.phone ? `tel:${emp.phone}` : '#'}
+                        className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm font-semibold transition-all ${
+                          emp.phone ? 'border-gray-100 bg-gray-50 text-gray-700 hover:bg-white hover:shadow-md hover:border-gray-200' : 'bg-gray-50 opacity-40 cursor-not-allowed text-gray-400 border-transparent'
+                        }`}
+                      >
+                        <Phone className="w-4 h-4" />
+                        Call
+                      </a>
                     </div>
-                  </div>
-
-                  <div className="space-y-1.5 mt-4">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-500">Employee ID</span>
-                      <span className="font-medium text-gray-900">{emp.employee_id || '–'}</span>
-                    </div>
-                    {emp.email && (
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-500">Email</span>
-                        <a href={`mailto:${emp.email}`} className="font-medium text-[#2196F3] truncate max-w-[180px] hover:underline">{emp.email}</a>
-                      </div>
-                    )}
-                    {emp.phone && (
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-500">Phone</span>
-                        <a href={`tel:${emp.phone}`} className="font-medium text-[#2196F3] hover:underline">{emp.phone}</a>
-                      </div>
-                    )}
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-500">Classification</span>
-                      <span className="font-medium text-gray-900">{emp.classification || '–'}</span>
-                    </div>
-                  </div>
-
-                  <div className="mt-5 pt-4 border-t border-gray-100 flex items-center justify-between">
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
-                      emp.status === 'active' ? 'bg-[#E8F5E9] text-[#4CAF50]' : 'bg-gray-100 text-gray-600'
-                    }`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${emp.status === 'active' ? 'bg-[#4CAF50]' : 'bg-gray-400'}`} />
-                      {emp.status.charAt(0).toUpperCase() + emp.status.slice(1)}
-                    </span>
                   </div>
                 </div>
               ))}
