@@ -21,9 +21,8 @@ interface ProjectDetailScreenProps {
   dataType?: 'activity' | 'attachments' | 'checklists' | 'toolbox' | 'observations' | 'incidents' | 'notes' | 'survey' | 'directory' | 'gallery' | 'settings' | 'work-logs';
 }
 
-export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType: defaultDataType }: ProjectDetailScreenProps) {
+export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType }: ProjectDetailScreenProps) {
   const { selectedProject, selectedDate } = useProject();
-  const [dataType, setDataType] = useState(defaultDataType || 'notes');
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
