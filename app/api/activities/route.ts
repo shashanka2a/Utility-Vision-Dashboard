@@ -2,28 +2,56 @@ import { NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
 
 export async function GET() {
-  const { data, error } = await supabaseServer
-    .from('activities')
-    .select('*')
-    .order('created_at', { ascending: false });
+  const [activitiesRes, attachmentsRes, projectsRes] = await Promise.all([
+    supabaseServer.from('activities').select('*'),
+    supabaseServer.from('attachments').select('*'),
+    supabaseServer.from('projects').select('id, name')
+  ]);
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  if (activitiesRes.error) {
+    return NextResponse.json({ error: activitiesRes.error.message }, { status: 500 });
   }
 
-  // Format data to match frontend requirements
-  const formattedData = data.map((activity) => ({
+  const projectsMap = Object.fromEntries(
+    (projectsRes.data || []).map(p => [String(p.id), p.name])
+  );
+
+  // 1. Format activities
+  const activitiesData = (activitiesRes.data || []).map((activity) => ({
     id: activity.id,
     employeeName: activity.employee_name,
     action: activity.action,
     project: activity.project_name,
     activityType: activity.activity_type,
     timestamp: activity.timestamp_label,
-    isoTimestamp: activity.created_at, // Add real timestamp for filtering
+    isoTimestamp: activity.created_at,
     metrics: activity.metrics || [],
     photos: activity.photos || [],
   }));
 
-  return NextResponse.json(formattedData);
+  // 2. Format attachments to match activity structure
+  const attachmentsData = (attachmentsRes.data || []).map((a) => ({
+    id: a.id,
+    employeeName: 'Artifact Employee', // Default for attachments
+    action: 'uploaded attachments in',
+    project: projectsMap[String(a.project_id)] || 'Unknown Project',
+    activityType: 'Attachments',
+    timestamp: a.logged_at ? new Date(a.logged_at).toLocaleDateString('en-US', { 
+        month: 'short', day: 'numeric', year: 'numeric' 
+    }) : 'Recent',
+    isoTimestamp: a.logged_at || new Date().toISOString(),
+    metrics: [
+        { label: 'Files', value: (a.file_names?.length || 0).toString(), unit: 'count' },
+        { label: 'Note', value: a.notes || 'No description' }
+    ],
+    photos: a.cloudinary_urls || [],
+  }));
+
+  // 3. Merge and sort by time
+  const combined = [...activitiesData, ...attachmentsData].sort((a, b) => 
+    new Date(b.isoTimestamp).getTime() - new Date(a.isoTimestamp).getTime()
+  );
+
+  return NextResponse.json(combined);
 }
 
