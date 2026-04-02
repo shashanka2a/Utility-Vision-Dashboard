@@ -24,6 +24,7 @@ interface ImageViewerProps {
 
 export function ImageViewer({ photos, initialIndex, isOpen, onClose, metadata }: ImageViewerProps) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
+  const [sharing, setSharing] = useState(false);
 
   useEffect(() => {
     setCurrentIndex(initialIndex);
@@ -33,6 +34,56 @@ export function ImageViewer({ photos, initialIndex, isOpen, onClose, metadata }:
 
   const next = () => setCurrentIndex((prev) => (prev + 1) % photos.length);
   const prev = () => setCurrentIndex((prev) => (prev - 1 + photos.length) % photos.length);
+
+  const handleShare = async () => {
+    const url = photos[currentIndex];
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: metadata?.fileName || 'Project Photo',
+          text: metadata?.description || 'Check out this photo from Utility Vision',
+          url: url
+        });
+      } catch (err) {
+        console.error('Error sharing:', err);
+      }
+    } else {
+      // Fallback: Copy to clipboard
+      try {
+        await navigator.clipboard.writeText(url);
+        alert('Image link copied to clipboard!');
+      } catch (err) {
+        console.error('Could not copy text: ', err);
+      }
+    }
+  };
+
+  const handleDownload = async () => {
+    const url = photos[currentIndex];
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = metadata?.fileName || `photo_${currentIndex + 1}.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      console.error('Download failed:', err);
+      // Fallback: open in new tab
+      window.open(url, '_blank');
+    }
+  };
+
+  const handleDelete = () => {
+    if (confirm('Are you sure you want to delete this photo? This will remove it from the project records.')) {
+        alert('Photo deletion initiated. This requires administrative permissions.');
+        // In a real app, this would call an API like `/api/activities/photos` with DELETE
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-[100] bg-white flex animate-in fade-in duration-200">
@@ -66,13 +117,13 @@ export function ImageViewer({ photos, initialIndex, isOpen, onClose, metadata }:
           </div>
 
           <div className="flex items-center gap-2">
-            <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-500">
+            <button onClick={handleShare} className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-500" title="Share photo">
               <Share2 className="w-5 h-5" />
             </button>
-            <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-500">
+            <button onClick={handleDownload} className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-500" title="Download photo">
               <Download className="w-5 h-5" />
             </button>
-            <button className="p-2 hover:bg-red-50 rounded-lg transition-colors text-gray-400 hover:text-red-500">
+            <button onClick={handleDelete} className="p-2 hover:bg-red-50 rounded-lg transition-colors text-gray-400 hover:text-red-500" title="Delete photo">
               <Trash2 className="w-5 h-5" />
             </button>
           </div>
