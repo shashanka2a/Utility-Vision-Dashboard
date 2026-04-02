@@ -493,20 +493,23 @@ export function DirectoryScreen() {
                           {emp.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                         </div>
                       </div>
-                      {/* Status Indicator pulse */}
-                      <div className={`absolute bottom-1 right-1 w-5 h-5 rounded-full border-4 border-white z-20 ${
-                        emp.status === 'active' ? 'bg-[#4CAF50]' : 'bg-gray-400'
-                      }`}>
-                        {emp.status === 'active' && <span className="absolute inset-0 rounded-full animate-ping bg-[#4CAF50] opacity-30" />}
-                      </div>
                     </div>
                     
-                    <button 
-                      onClick={() => openEdit(emp)} 
-                      className="text-lg font-bold text-gray-900 group-hover:text-[#FF6633] transition-colors line-clamp-1 mb-1"
-                    >
-                      {emp.name}
-                    </button>
+                    <div className="flex items-center justify-center gap-2 mb-1">
+                      <button 
+                        onClick={() => openEdit(emp)} 
+                        className="text-lg font-bold text-gray-900 group-hover:text-[#FF6633] transition-colors line-clamp-1"
+                      >
+                        {emp.name}
+                      </button>
+                      <span className={`px-1.5 py-0.5 rounded-md text-[9px] font-extrabold uppercase tracking-widest border transition-all ${
+                        emp.status === 'active' 
+                          ? 'bg-green-50 text-green-600 border-green-100' 
+                          : 'bg-gray-50 text-gray-400 border-gray-100'
+                      }`}>
+                        {emp.status}
+                      </span>
+                    </div>
                     <div className="flex items-center gap-1.5 px-3 py-1 bg-gray-100 rounded-full text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">
                        <Shield className="w-3 h-3" />
                        {roleLabel(emp.role)}
