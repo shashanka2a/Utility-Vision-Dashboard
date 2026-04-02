@@ -114,24 +114,29 @@ export function ActivityCard({ activity }: ActivityCardProps) {
 
           {/* Photos Grid */}
           {activity.photos.length > 0 && (
-            <div className="pt-4">
-              <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-3">
-                Attached Photos
+            <div className="pt-4 border-t border-gray-100/50 mt-4">
+              <h4 className="text-sm font-semibold text-gray-800 mb-4 flex items-center justify-between">
+                <span>{activity.activityType === 'Attachments' ? 'Daily inspection sheets' : 'Attached Photos'}</span>
+                {activity.photos.length > 1 && (
+                  <span className="text-[11px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-bold uppercase">
+                    {activity.photos.length} items
+                  </span>
+                )}
               </h4>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="flex flex-wrap gap-2.5">
                 {activity.photos.map((photo, index) => (
                   <button
                     key={index}
-                    className="aspect-square relative group overflow-hidden rounded-lg border border-gray-200 hover:border-gray-400 transition-all focus:outline-none"
-                    aria-label={`View photo ${index + 1} of ${activity.photos.length}`}
+                    className="w-24 h-24 lg:w-32 lg:h-32 flex-shrink-0 relative group overflow-hidden rounded-xl border border-gray-200 hover:border-[#FF6633] transition-all focus:outline-none shadow-sm hover:shadow-md"
+                    aria-label={`View photo ${index + 1}`}
                   >
                     <Image
                       src={photo}
                       alt={`Activity photo ${index + 1}`}
-                      width={200}
-                      height={200}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      fill
+                      className="object-cover group-hover:scale-110 transition-transform duration-500"
                     />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors" />
                   </button>
                 ))}
               </div>
