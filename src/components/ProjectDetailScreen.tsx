@@ -63,18 +63,29 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
       .finally(() => setLoading(false));
   }, [dataType, selectedProject, selectedDate]);
 
-  // Handle Gallery Rendering
+  // Handle Gallery Rendering (Timeline Style)
   if (dataType === 'gallery') {
     const allPhotos = data.flatMap(item => 
       (item.photos || []).map((url: string) => ({
         url,
         uploadedBy: item.employeeName,
         date: item.timestamp,
+        isoDate: item.isoTimestamp?.split('T')[0] || item.timestamp.split(' at ')[0],
         project: item.project,
         description: item.metrics?.find((m: any) => m.label?.toLowerCase().includes('note') || m.label?.toLowerCase().includes('desc'))?.value || 'Uploaded in ' + item.activityType,
         fileName: url.split('/').pop()
       }))
     );
+
+    // Group by date
+    const groups: { [key: string]: any[] } = {};
+    allPhotos.forEach(p => {
+      const d = p.isoDate;
+      if (!groups[d]) groups[d] = [];
+      groups[d].push(p);
+    });
+
+    const sortedDates = Object.keys(groups).sort((a, b) => b.localeCompare(a));
 
     return (
       <div className="h-full flex flex-col bg-gray-50 flex-1 overflow-hidden">
@@ -91,43 +102,38 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
           </div>
         </div>
 
-        <div className="flex-1 overflow-auto p-8 pt-4">
+        <div className="flex-1 overflow-auto p-8 pt-4 space-y-10">
           {loading ? (
             <div className="flex flex-col items-center justify-center h-64 text-gray-400">
                <Loader2 className="w-8 h-8 animate-spin mb-4" />
-               <p className="text-sm">Scanning project archives...</p>
+               <p className="text-sm font-medium">Scanning project history...</p>
             </div>
-          ) : allPhotos.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center shadow-sm">
-               <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <ImageIcon className="w-10 h-10 text-gray-300" />
-               </div>
-               <h3 className="text-lg font-bold text-gray-900">No media found</h3>
-               <p className="text-gray-500 max-w-xs mx-auto">Upload attachments or submit logs with photos to see them here.</p>
-            </div>
+          ) : sortedDates.length === 0 ? (
+            <div className="flex-1" />
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-              {allPhotos.map((photo, index) => (
-                <div 
-                  key={index} 
-                  className="group relative aspect-square bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer"
-                  onClick={() => setViewerState({ isOpen: true, index, list: allPhotos })}
-                >
-                  <NextImage 
-                    src={photo.url} 
-                    alt="Gallery item"
-                    fill
-                    className="object-cover group-hover:scale-110 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="absolute bottom-3 left-3 right-3">
-                      <p className="text-white text-[11px] font-bold truncate">{photo.uploadedBy}</p>
-                      <p className="text-gray-300 text-[9px] truncate">{photo.date}</p>
+            sortedDates.map(date => (
+              <div key={date}>
+                <h3 className="text-sm font-bold text-gray-900 border-b border-gray-100 pb-2 mb-4">
+                  {date === format(new Date(), 'yyyy-MM-dd') ? 'Today' : date}
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                  {groups[date].map((photo, index) => (
+                    <div 
+                      key={index} 
+                      className="group relative aspect-square bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+                      onClick={() => setViewerState({ isOpen: true, index: allPhotos.indexOf(photo), list: allPhotos })}
+                    >
+                      <NextImage 
+                        src={photo.url} 
+                        alt="Gallery item"
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
                     </div>
-                  </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            ))
           )}
         </div>
 
@@ -222,26 +228,63 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
     );
   }
 
-  // Specialized rendering for Attachments in Daily Logs
+  // Specialized rendering for Attachments module (File Card Grid)
   if (dataType === 'attachments') {
+    const files = data.flatMap(item => 
+      (item.photos || []).map((url: string) => ({
+        url,
+        fileName: url.split('/').pop() || 'Untitled File',
+        uploadedBy: item.employeeName,
+        date: item.timestamp,
+        project: item.project,
+        description: item.metrics?.find((m: any) => m.label?.toLowerCase().includes('note'))?.value
+      }))
+    );
+
     return (
       <div className="h-full flex flex-col bg-gray-50 flex-1 overflow-hidden">
-        <div className="flex-1 overflow-auto p-8">
+        <div className="px-8 pt-8 pb-4 flex items-center justify-between">
+           <div className="text-xs text-gray-400 font-medium">
+             Drag and drop files below or <span className="text-[#2196F3] cursor-pointer">select files</span>. The file size limit is 60MB.
+           </div>
+        </div>
+
+        <div className="flex-1 overflow-auto p-8 pt-4">
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-20 text-gray-400 font-medium">
-              <Loader2 className="w-10 h-10 animate-spin mb-4" />
-              <p>Scanning project archives...</p>
-            </div>
-          ) : data.length === 0 ? (
+             <div className="flex py-20 justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-gray-300" />
+             </div>
+          ) : files.length === 0 ? (
             <div className="flex-1" />
           ) : (
-            <div className="max-w-4xl mx-auto space-y-4">
-              {data.map((item, idx) => (
-                <ActivityCard key={item.id || idx} activity={item as ActivityType} />
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+              {files.map((file, idx) => (
+                <div 
+                  key={idx} 
+                  className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:border-[#2196F3] transition-all cursor-pointer group"
+                  onClick={() => setViewerState({ isOpen: true, index: idx, list: files })}
+                >
+                  <div className="aspect-square relative transition-transform duration-300 group-hover:scale-[1.02]">
+                    <NextImage src={file.url} alt={file.fileName} fill className="object-cover" />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors" />
+                  </div>
+                  <div className="p-3 bg-white border-t border-gray-100">
+                    <p className="text-[13px] font-medium text-gray-700 truncate">{file.fileName}</p>
+                    <p className="text-[11px] text-gray-400 mt-0.5">{file.date}</p>
+                  </div>
+                </div>
               ))}
             </div>
           )}
         </div>
+
+        <ImageViewer 
+          isOpen={viewerState.isOpen}
+          photos={viewerState.list.map(f => f.url)}
+          initialIndex={viewerState.index}
+          onClose={() => setViewerState({ ...viewerState, isOpen: false })}
+          metadata={viewerState.list[viewerState.index]}
+        />
       </div>
     );
   }
