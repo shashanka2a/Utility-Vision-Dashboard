@@ -4,6 +4,7 @@ import { ChevronDown, Calendar } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 import type { Activity } from "./ActivityScreen";
+import { ImageViewer } from "./ImageViewer";
 
 interface ActivityCardProps {
   activity: Activity;
@@ -13,6 +14,20 @@ interface ActivityCardProps {
 export function ActivityCard({ activity }: ActivityCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [viewerState, setViewerState] = useState<{ isOpen: boolean; index: number }>({
+    isOpen: false,
+    index: 0
+  });
+
+  const noteContent = activity.metrics?.find((m: any) => {
+    const l = (m.label || m.name || '').toLowerCase();
+    return (
+      l === 'description' || l === 'note' || l === 'content' || 
+      l === 'details' || l === 'comment' || l === 'message' || 
+      l === 'general note' || l === 'text' ||
+      l.includes('note') || l.includes('desc')
+    );
+  })?.value;
 
   return (
     <div 
@@ -127,6 +142,10 @@ export function ActivityCard({ activity }: ActivityCardProps) {
                 {activity.photos.map((photo, index) => (
                   <button
                     key={index}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setViewerState({ isOpen: true, index });
+                    }}
                     className="w-24 h-24 lg:w-32 lg:h-32 flex-shrink-0 relative group overflow-hidden rounded-xl border border-gray-200 hover:border-[#FF6633] transition-all focus:outline-none shadow-sm hover:shadow-md"
                     aria-label={`View photo ${index + 1}`}
                   >
@@ -230,6 +249,21 @@ export function ActivityCard({ activity }: ActivityCardProps) {
           </div>
         </div>
       )}
+
+      {/* Rich Image Viewer */}
+      <ImageViewer 
+        isOpen={viewerState.isOpen}
+        photos={activity.photos}
+        initialIndex={viewerState.index}
+        onClose={() => setViewerState({ ...viewerState, isOpen: false })}
+        metadata={{
+          fileName: activity.photos[viewerState.index]?.split('/').pop(),
+          uploadedBy: activity.employeeName,
+          date: activity.timestamp,
+          description: noteContent,
+          project: activity.project,
+        }}
+      />
     </div>
   );
 }

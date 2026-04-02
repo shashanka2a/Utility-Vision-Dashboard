@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
+import NextImage from "next/image";
+import { ImageViewer } from "./ImageViewer";
 
 interface ProjectDetailScreenProps {
   title: string;
@@ -17,11 +19,17 @@ interface ProjectDetailScreenProps {
   dataType?: 'activity' | 'attachments' | 'checklists' | 'toolbox' | 'observations' | 'incidents' | 'notes' | 'survey' | 'directory' | 'gallery' | 'settings' | 'work-logs';
 }
 
-export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType }: ProjectDetailScreenProps) {
+export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType: defaultDataType }: ProjectDetailScreenProps) {
   const { selectedProject, selectedDate } = useProject();
+  const [dataType, setDataType] = useState(defaultDataType || 'notes');
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [viewerState, setViewerState] = useState<{ isOpen: boolean; index: number; list: any[] }>({
+    isOpen: false,
+    index: 0,
+    list: []
+  });
 
   useEffect(() => {
     if (!selectedProject || !selectedDate) return;
@@ -30,13 +38,14 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
     fetch('/api/activities')
       .then(res => res.json())
       .then((activities: any[]) => {
-        // Filter by project and date
+        // Filter by project
+        const matchProject = (a: any) => selectedProject === "All Projects" || a.project === selectedProject;
+        
+        // Filter by date (unless it's gallery)
         const dateStr = format(selectedDate, "yyyy-MM-dd");
-        let filtered = activities.filter(a => {
-           const matchProject = selectedProject === "All Projects" || a.project === selectedProject;
-           const matchDate = a.timestamp.includes(dateStr) || a.isoTimestamp?.startsWith(dateStr);
-           return matchProject && matchDate;
-        });
+        const matchDate = (a: any) => dataType === 'gallery' || a.timestamp.includes(dateStr) || a.isoTimestamp?.startsWith(dateStr);
+
+        let filtered = activities.filter(a => matchProject(a) && matchDate(a));
 
         // Filter by dataType if applicable
         if (dataType === 'notes') {
@@ -52,6 +61,89 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [dataType, selectedProject, selectedDate]);
+
+  // Handle Gallery Rendering
+  if (dataType === 'gallery') {
+    const allPhotos = data.flatMap(item => 
+      (item.photos || []).map((url: string) => ({
+        url,
+        uploadedBy: item.employeeName,
+        date: item.timestamp,
+        project: item.project,
+        description: item.metrics?.find((m: any) => m.label?.toLowerCase().includes('note') || m.label?.toLowerCase().includes('desc'))?.value || 'Uploaded in ' + item.activityType,
+        fileName: url.split('/').pop()
+      }))
+    );
+
+    return (
+      <div className="h-full flex flex-col bg-gray-50 flex-1 overflow-hidden">
+        <div className="p-8 pb-4 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Project Gallery</h1>
+            <p className="text-sm text-gray-500 mt-1">Viewing all assets for {selectedProject}</p>
+          </div>
+          <div className="flex items-center gap-3">
+             <div className="relative w-64">
+                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input 
+                  type="text" 
+                  placeholder="Find assets..." 
+                  className="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6633]/10 focus:border-[#FF6633] transition-all"
+                />
+             </div>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-auto p-8 pt-4">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+               <Loader2 className="w-8 h-8 animate-spin mb-4" />
+               <p className="text-sm">Scanning project archives...</p>
+            </div>
+          ) : allPhotos.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center shadow-sm">
+               <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <ImageIcon className="w-10 h-10 text-gray-300" />
+               </div>
+               <h3 className="text-lg font-bold text-gray-900">No media found</h3>
+               <p className="text-gray-500 max-w-xs mx-auto">Upload attachments or submit logs with photos to see them here.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              {allPhotos.map((photo, index) => (
+                <div 
+                  key={index} 
+                  className="group relative aspect-square bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+                  onClick={() => setViewerState({ isOpen: true, index, list: allPhotos })}
+                >
+                  <NextImage 
+                    src={photo.url} 
+                    alt="Gallery item"
+                    fill
+                    className="object-cover group-hover:scale-110 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="absolute bottom-3 left-3 right-3">
+                      <p className="text-white text-[11px] font-bold truncate">{photo.uploadedBy}</p>
+                      <p className="text-gray-300 text-[9px] truncate">{photo.date}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <ImageViewer 
+          isOpen={viewerState.isOpen}
+          photos={viewerState.list.map(p => p.url)}
+          initialIndex={viewerState.index}
+          onClose={() => setViewerState({ ...viewerState, isOpen: false })}
+          metadata={viewerState.list[viewerState.index]}
+        />
+      </div>
+    );
+  }
 
   // Handle Note-specific rendering
   if (dataType === 'notes') {
