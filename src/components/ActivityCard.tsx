@@ -33,25 +33,30 @@ export function ActivityCard({ activity }: ActivityCardProps) {
               {/* Main Info */}
               <p className="text-[15px] text-gray-800 leading-snug">
                 <span className="font-semibold text-gray-900">{activity.employeeName}</span>
-                {' '}{activity.activityType === 'Notes' ? (
-                  activity.metrics?.find((m: any) => {
-                    const l = (m.label || m.name || '').toLowerCase();
-                    return (
-                      l === 'description' || l === 'note' || l === 'content' || 
-                      l === 'details' || l === 'comment' || l === 'message' || 
-                      l === 'general note' || l === 'text' ||
-                      l.includes('note') || l.includes('desc')
-                    );
-                  })?.value || activity.action.replace(' in', '')
-                ) : (
-                  activity.action.replace(' in', '')
-                )} in{' '}
+                {' '}{activity.action.replace(' in', '')} in{' '}
                 <span className="text-gray-800">{activity.project}</span>
               </p>
 
               <div className="flex items-center gap-1.5 mt-1 text-sm text-gray-500">
                 <span>{activity.timestamp}</span>
               </div>
+
+              {/* Enhanced Note Preview below header if applicable */}
+              {activity.activityType === 'Notes' && (
+                <div className="mt-4 p-3 bg-blue-50/50 border border-blue-100/50 rounded-lg">
+                  <p className="text-[14px] text-gray-700 italic leading-relaxed">
+                    "{activity.metrics?.find((m: any) => {
+                      const l = (m.label || m.name || '').toLowerCase();
+                      return (
+                        l === 'description' || l === 'note' || l === 'content' || 
+                        l === 'details' || l === 'comment' || l === 'message' || 
+                        l === 'general note' || l === 'text' ||
+                        l.includes('note') || l.includes('desc')
+                      );
+                    })?.value || 'No content'}"
+                  </p>
+                </div>
+              )}
 
               {/* Highlighted Metrics Preview */}
               {activity.metrics.filter(m => m.highlight).map((metric, index) => (
