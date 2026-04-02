@@ -30,22 +30,24 @@ export async function GET() {
   }));
 
   // 2. Format attachments to match activity structure
-  const attachmentsData = (attachmentsRes.data || []).map((a) => ({
-    id: a.id,
-    employeeName: 'Artifact Employee', // Default for attachments
-    action: 'uploaded attachments in',
-    project: projectsMap[String(a.project_id)] || 'Unknown Project',
-    activityType: 'Attachments',
-    timestamp: a.logged_at ? new Date(a.logged_at).toLocaleDateString('en-US', { 
-        month: 'short', day: 'numeric', year: 'numeric' 
-    }) : 'Recent',
-    isoTimestamp: a.logged_at || new Date().toISOString(),
-    metrics: [
-        { label: 'Files', value: (a.file_names?.length || 0).toString(), unit: 'count' },
-        { label: 'Note', value: a.notes || 'No description' }
-    ],
-    photos: a.cloudinary_urls || [],
-  }));
+  const attachmentsData = (attachmentsRes.data || []).map((a) => {
+    const loggedAt = a.logged_at ? new Date(a.logged_at) : new Date();
+    return {
+        id: a.id,
+        employeeName: 'Artifact Employee', 
+        action: 'submitted attachments in',
+        project: projectsMap[String(a.project_id)] || 'Unknown Project',
+        activityType: 'Attachments',
+        timestamp: `${loggedAt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} | ${loggedAt.toISOString().split('T')[0]}`,
+        isoTimestamp: a.logged_at || new Date().toISOString(),
+        metrics: [
+            { label: 'Files', value: (a.file_names?.length || 0).toString(), unit: 'count' },
+            { label: 'Note', value: a.notes || 'No description' }
+        ],
+        photos: Array.isArray(a.cloudinary_urls) ? a.cloudinary_urls : 
+                 (typeof a.cloudinary_urls === 'string' ? JSON.parse(a.cloudinary_urls) : []),
+    };
+  });
 
   // 3. Merge and sort by time
   const combined = [...activitiesData, ...attachmentsData].sort((a, b) => 
