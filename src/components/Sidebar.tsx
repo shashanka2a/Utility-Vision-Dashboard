@@ -113,7 +113,7 @@ const PROJECT_NAV = [
     children: [
       { label: "Activity",  view: "activity" },
       { label: "Reports",   view: "reports" },
-      { label: "Insights",  view: "project-insights" },
+      { label: "Summary",   view: "project-insights" },
     ],
   },
   {
