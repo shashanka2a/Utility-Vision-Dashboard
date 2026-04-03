@@ -7,7 +7,7 @@ import {
   FileSpreadsheet, MessageSquare, Clipboard, Loader2,
   Plus, MoreHorizontal, ArrowUpDown, Calendar,
   Clock, User, TrendingUp, BarChart as BarChartIcon,
-  CheckCircle2, AlertTriangle, Info
+  CheckCircle2, AlertTriangle, Info, Briefcase
 } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { format, subDays, eachDayOfInterval, startOfWeek, endOfWeek } from "date-fns";
@@ -234,16 +234,44 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
       <div className="h-full flex flex-col bg-gray-50 flex-1 overflow-hidden uppercase-sidebar-fix">
         {/* Insights Toolbar */}
         <div className="px-8 pt-6 pb-4 bg-white border-b border-gray-200 flex items-center justify-between">
-            <div className="flex items-center gap-2 bg-gray-50 p-1 rounded-xl w-fit">
-               {(['7d', '30d', 'all'] as const).map(range => (
-                 <button
-                   key={range}
-                   onClick={() => setTimeRange(range)}
-                   className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${timeRange === range ? 'bg-white text-[#FF6633] shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
-                 >
-                   {range === '7d' ? '7 Days' : range === '30d' ? '30 Days' : 'Full Summary'}
-                 </button>
-               ))}
+            <div className="flex items-center gap-6">
+                <div className="flex items-center gap-2 bg-gray-50 p-1 rounded-xl w-fit">
+                   {(['7d', '30d', 'all'] as const).map(range => (
+                     <button
+                       key={range}
+                       onClick={() => setTimeRange(range)}
+                       className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${timeRange === range ? 'bg-white text-[#FF6633] shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                     >
+                       {range === '7d' ? '7 Days' : range === '30d' ? '30 Days' : 'Full Summary'}
+                     </button>
+                   ))}
+                </div>
+
+                <div className="h-4 w-[1px] bg-gray-200 mx-1" />
+
+                <div className="flex items-center gap-4">
+                   <div className="flex flex-col">
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">Active Project</span>
+                      <div className="flex items-center gap-1.5 font-bold text-sm text-gray-900">
+                        <Briefcase className="w-3.5 h-3.5 text-[#FF6633]" />
+                        {selectedProject}
+                      </div>
+                   </div>
+                   <div className="flex flex-col">
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">Time Horizon</span>
+                      <div className="flex items-center gap-1.5 font-bold text-sm text-gray-900">
+                        <Clock className="w-3.5 h-3.5 text-[#FF6633]" />
+                        {timeRange === 'all' ? 'Entire Project' : `${timeRange.replace('d', '')} Day Window`}
+                      </div>
+                   </div>
+                </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+               <div className="text-[12px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
+                 <Calendar className="w-3.5 h-3.5" />
+                 Analyzing: <span className="text-gray-900">{format(selectedDate, "MMM yyyy")}</span>
+               </div>
             </div>
         </div>
 
