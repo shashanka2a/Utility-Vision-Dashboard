@@ -7,7 +7,7 @@ import {
   FileSpreadsheet, MessageSquare, Clipboard, Loader2,
   Plus, MoreHorizontal, ArrowUpDown, Calendar,
   Clock, User, TrendingUp, BarChart as BarChartIcon,
-  CheckCircle2, AlertTriangle, Info, Briefcase
+  CheckCircle2, AlertTriangle, Info, Briefcase, ChevronDown
 } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { format, subDays, eachDayOfInterval, startOfWeek, endOfWeek } from "date-fns";
@@ -29,16 +29,26 @@ interface ProjectDetailScreenProps {
 }
 
 export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType }: ProjectDetailScreenProps) {
-  const { selectedProject, selectedDate } = useProject();
+  const { selectedProject, setSelectedProject, selectedDate } = useProject();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [timeRange, setTimeRange] = useState<'1d' | '7d' | '30d' | 'all'>('all');
+  const [timeRange, setTimeRange] = useState<'1d' | '7d' | '30d' | 'all' | 'custom'>('all');
+  const [startDate, setStartDate] = useState<string>(format(subDays(new Date(), 30), "yyyy-MM-dd"));
+  const [endDate, setEndDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
+  const [projectOpen, setProjectOpen] = useState(false);
+  const [projectsList, setProjectsList] = useState<string[]>([]);
   const [viewerState, setViewerState] = useState<{ isOpen: boolean; index: number; list: any[] }>({
     isOpen: false,
     index: 0,
     list: []
   });
+
+  useEffect(() => {
+    fetch('/api/projects').then(res => res.json()).then(p => {
+      setProjectsList(["All Projects", ...p.map((x: any) => x.name)]);
+    }).catch(console.error);
+  }, []);
 
   useEffect(() => {
     if (!selectedProject || !selectedDate) return;
@@ -59,6 +69,14 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
             if (timeRange === 'all') return true;
             const itemDate = new Date(a.isoTimestamp || a.timestamp);
             const refDate = new Date(selectedDate);
+            
+            if (timeRange === 'custom') {
+               const start = new Date(startDate);
+               const end = new Date(endDate);
+               end.setHours(23, 59, 59, 999);
+               return itemDate >= start && itemDate <= end;
+            }
+
             if (timeRange === '1d') return format(itemDate, "yyyy-MM-dd") === dateStr;
             const diffDays = Math.floor((refDate.getTime() - itemDate.getTime()) / (1000 * 60 * 60 * 24));
             if (timeRange === '7d') return diffDays >= 0 && diffDays < 7;
@@ -68,6 +86,7 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
         };
 
         let filtered = activities.filter(a => matchProject(a) && matchDate(a));
+// ... (rest of logic)
 
         if (dataType === 'notes') {
           filtered = filtered.filter(a => a.activityType === 'Notes');
@@ -232,46 +251,87 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
   if (dataType === 'activity') {
     return (
       <div className="h-full flex flex-col bg-gray-50 flex-1 overflow-hidden uppercase-sidebar-fix">
-        {/* Insights Toolbar */}
-        <div className="px-8 pt-6 pb-4 bg-white border-b border-gray-200 flex items-center justify-between">
+        {/* Insights Extended Toolbar */}
+        <div className="px-8 pt-6 pb-4 bg-white border-b border-gray-200 flex items-center justify-between shadow-sm relative z-20">
             <div className="flex items-center gap-6">
-                <div className="flex items-center gap-2 bg-gray-50 p-1 rounded-xl w-fit">
-                   {(['7d', '30d', 'all'] as const).map(range => (
+                {/* Time Presets */}
+                <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl w-fit">
+                   {(['7d', '30d', 'all', 'custom'] as const).map(range => (
                      <button
                        key={range}
                        onClick={() => setTimeRange(range)}
                        className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${timeRange === range ? 'bg-white text-[#FF6633] shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
                      >
-                       {range === '7d' ? '7 Days' : range === '30d' ? '30 Days' : 'Full Summary'}
+                       {range === '7d' ? '7 Days' : range === '30d' ? '30 Days' : range === 'all' ? 'Full Summary' : 'Custom Range'}
                      </button>
                    ))}
                 </div>
 
-                <div className="h-4 w-[1px] bg-gray-200 mx-1" />
+                <div className="h-6 w-[1px] bg-gray-200" />
 
-                <div className="flex items-center gap-4">
-                   <div className="flex flex-col">
-                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">Active Project</span>
-                      <div className="flex items-center gap-1.5 font-bold text-sm text-gray-900">
+                {/* Inline Project Selector */}
+                <div className="relative group">
+                   <span className="absolute -top-4 left-0 text-[9px] font-black text-gray-400 uppercase tracking-widest">Active Project context</span>
+                   <button 
+                     onClick={() => setProjectOpen(!projectOpen)}
+                     className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 rounded-xl transition-all border border-transparent hover:border-gray-200"
+                   >
+                      <div className="p-1.5 bg-[#FFF3EF] rounded-lg">
                         <Briefcase className="w-3.5 h-3.5 text-[#FF6633]" />
-                        {selectedProject}
                       </div>
-                   </div>
-                   <div className="flex flex-col">
-                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">Time Horizon</span>
-                      <div className="flex items-center gap-1.5 font-bold text-sm text-gray-900">
-                        <Clock className="w-3.5 h-3.5 text-[#FF6633]" />
-                        {timeRange === 'all' ? 'Entire Project' : `${timeRange.replace('d', '')} Day Window`}
+                      <div className="flex flex-col items-start">
+                         <span className="text-[13px] font-bold text-gray-900 leading-tight">{selectedProject}</span>
                       </div>
-                   </div>
+                      <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform ${projectOpen ? 'rotate-180' : ''}`} />
+                   </button>
+
+                   {projectOpen && (
+                     <div className="absolute top-14 left-0 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden py-1.5 animate-in fade-in slide-in-from-top-1 z-50">
+                        {projectsList.map(p => (
+                          <button
+                            key={p}
+                            onClick={() => { setSelectedProject(p); setProjectOpen(false); }}
+                            className={`w-full text-left px-5 py-2.5 text-[13px] hover:bg-gray-50 flex items-center justify-between ${selectedProject === p ? 'text-[#FF6633] font-bold bg-[#FFF3EF]' : 'text-gray-600'}`}
+                          >
+                            {p}
+                            {selectedProject === p && <div className="w-1.5 h-1.5 rounded-full bg-[#FF6633]" />}
+                          </button>
+                        ))}
+                     </div>
+                   )}
                 </div>
             </div>
 
+            {/* Custom Date Inputs or Month Overview */}
             <div className="flex items-center gap-3">
-               <div className="text-[12px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
-                 <Calendar className="w-3.5 h-3.5" />
-                 Analyzing: <span className="text-gray-900">{format(selectedDate, "MMM yyyy")}</span>
-               </div>
+               {timeRange === 'custom' ? (
+                 <div className="flex items-center gap-2 bg-gray-50 p-1.5 rounded-xl border border-gray-100 animate-in fade-in slide-in-from-right-2">
+                    <div className="flex flex-col px-2">
+                       <span className="text-[8px] font-black text-gray-400 uppercase">Start</span>
+                       <input 
+                         type="date" 
+                         value={startDate} 
+                         onChange={(e) => setStartDate(e.target.value)}
+                         className="bg-transparent border-none p-0 text-[12px] font-bold text-gray-900 focus:ring-0 cursor-pointer"
+                       />
+                    </div>
+                    <div className="w-px h-6 bg-gray-200" />
+                    <div className="flex flex-col px-2">
+                       <span className="text-[8px] font-black text-gray-400 uppercase">End</span>
+                       <input 
+                         type="date" 
+                         value={endDate} 
+                         onChange={(e) => setEndDate(e.target.value)}
+                         className="bg-transparent border-none p-0 text-[12px] font-bold text-gray-900 focus:ring-0 cursor-pointer"
+                       />
+                    </div>
+                 </div>
+               ) : (
+                 <div className="text-[12px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2 bg-gray-50 px-4 py-2.5 rounded-xl border border-gray-100 shadow-sm transition-all hover:bg-white hover:shadow-md cursor-default">
+                    <Calendar className="w-4 h-4 text-[#FF6633]" />
+                    Summary Period: <span className="text-gray-900">{format(selectedDate, "MMMM yyyy")}</span>
+                 </div>
+               )}
             </div>
         </div>
 
