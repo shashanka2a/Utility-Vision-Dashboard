@@ -302,39 +302,32 @@ export function ProjectsScreen() {
               {filteredProjects.map(project => (
                 <div
                   key={project.id}
-                  className="bg-white border border-gray-300 rounded-lg p-5 hover:shadow-lg transition-all duration-200"
+                  onClick={() => {
+                    setSelectedProject(project.name);
+                    router.push(`/projects/dashboard?project=${encodeURIComponent(project.name)}&view=activity`);
+                  }}
+                  className="bg-white border border-gray-300 rounded-lg p-5 hover:shadow-lg transition-all duration-200 cursor-pointer group/card"
                 >
-                  {/* Top row: name + status + date + actions */}
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <button 
-                        onClick={() => {
-                          setSelectedProject(project.name);
-                          router.push(`/projects/dashboard?project=${encodeURIComponent(project.name)}&view=activity`);
-                        }}
-                        className="text-left group/title focus:outline-none"
-                      >
-                        <h3 className="font-semibold text-black text-base truncate group-hover/title:text-[#2196F3] transition-colors">{project.name}</h3>
-                        <p className="text-sm text-gray-500 mt-0.5 group-hover/title:text-gray-600">{project.job_number}</p>
-                      </button>
+                      <h3 className="font-semibold text-black text-base truncate group-hover/card:text-[#2196F3] transition-colors">{project.name}</h3>
+                      <p className="text-sm text-gray-500 mt-0.5 group-hover/card:text-gray-600 font-medium">{project.job_number}</p>
                       {(project.city || project.state) && (
-                        <p className="text-xs text-gray-400 mt-0.5">
+                        <p className="text-xs text-gray-400 mt-1 uppercase tracking-wider font-bold">
                           {[project.city, project.state].filter(Boolean).join(', ')}
                         </p>
                       )}
                     </div>
-                    <div className="flex items-center gap-1.5 flex-shrink-0">
-                      {/* Status badge */}
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                    <div className="flex items-center gap-1.5 flex-shrink-0" onClick={e => e.stopPropagation()}>
+                      <span className={`px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider ${
                         project.status === 'active'  ? 'bg-[#E8F5E9] text-[#4CAF50]' :
                         project.status === 'paused'  ? 'bg-[#FFF8E1] text-[#FFC107]' :
                                                        'bg-gray-100 text-gray-700'
                       }`}>
-                        {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
+                        {project.status}
                       </span>
-                      {/* Start date inline */}
                       {project.start_date && (
-                        <span className="flex items-center gap-1 text-xs text-gray-500">
+                        <span className="flex items-center gap-1 text-[11px] text-gray-400 font-medium">
                           <Clock className="w-3 h-3" />
                           {new Date(project.start_date).toLocaleDateString()}
                         </span>
@@ -372,41 +365,32 @@ export function ProjectsScreen() {
               {filteredProjects.map((project, i) => (
                 <div
                   key={project.id}
-                  className={`grid grid-cols-[1fr_auto_auto_auto_auto] items-center px-4 py-3 gap-4 hover:bg-gray-50 transition-colors ${
+                  onClick={() => {
+                    setSelectedProject(project.name);
+                    router.push(`/projects/dashboard?project=${encodeURIComponent(project.name)}&view=activity`);
+                  }}
+                  className={`grid grid-cols-[1fr_auto_auto_auto_auto] items-center px-4 py-3 gap-4 hover:bg-gray-50 transition-all cursor-pointer group/row ${
                     i < filteredProjects.length - 1 ? 'border-b border-gray-100' : ''
                   }`}
                 >
-                  {/* Name + location */}
                   <div className="min-w-0">
-                    <button 
-                      onClick={() => {
-                        setSelectedProject(project.name);
-                        router.push(`/projects/dashboard?project=${encodeURIComponent(project.name)}&view=activity`);
-                      }}
-                      className="text-left group/list focus:outline-none"
-                    >
-                      <p className="font-medium text-gray-900 text-sm truncate group-hover/list:text-[#2196F3] transition-colors">{project.name}</p>
-                    </button>
+                    <p className="font-bold text-gray-900 text-sm truncate group-hover/row:text-[#2196F3] transition-colors">{project.name}</p>
                     {(project.city || project.state) && (
-                      <p className="text-xs text-gray-400 mt-0.5">{[project.city, project.state].filter(Boolean).join(', ')}</p>
+                      <p className="text-[10px] text-gray-400 mt-0.5 font-bold uppercase tracking-wider">{[project.city, project.state].filter(Boolean).join(', ')}</p>
                     )}
                   </div>
-                  {/* Job # */}
-                  <span className="w-20 text-center text-sm text-gray-600">{project.job_number || '—'}</span>
-                  {/* Start date */}
+                  <span className="w-20 text-center text-sm text-gray-600 font-medium">{project.job_number || '—'}</span>
                   <span className="w-28 text-center text-sm text-gray-600">
                     {project.start_date ? new Date(project.start_date).toLocaleDateString() : '—'}
                   </span>
-                  {/* Status */}
-                  <span className={`w-20 text-center px-2 py-1 rounded text-xs font-medium ${
+                  <span className={`w-20 text-center px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider ${
                     project.status === 'active'  ? 'bg-[#E8F5E9] text-[#4CAF50]' :
                     project.status === 'paused'  ? 'bg-[#FFF8E1] text-[#FFC107]' :
                                                    'bg-gray-100 text-gray-700'
                   }`}>
-                    {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
+                    {project.status}
                   </span>
-                  {/* Actions */}
-                  <div className="w-16 flex items-center justify-center gap-1">
+                  <div className="w-16 flex items-center justify-center gap-1" onClick={e => e.stopPropagation()}>
                     <button
                       onClick={() => openEdit(project)}
                       className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors focus:outline-none"
