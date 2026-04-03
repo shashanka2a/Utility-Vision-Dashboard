@@ -103,7 +103,7 @@ export function DashboardHeader() {
 
   const formattedDate = format(selectedDate, "EEE d MMM yyyy");
 
-  const isInsightsView = view === "project-insights" || pathname.includes("/insights/summary");
+  const isInsightsView = view === "project-insights" || pathname.startsWith("/insights");
   const showProjectSelector = selectedProject === "All Projects" || isInsightsView;
 
   const getSignatureStatus = (date: Date) => {

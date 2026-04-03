@@ -43,7 +43,7 @@ function DashboardSubNav({ pathname }: { pathname: string }) {
       label: "Insights",
       icon: TrendingUp,
       path: "/insights",
-      children: [{ label: "Daily summary", path: "/insights/summary" }],
+      children: [{ label: "Summary", path: "/insights/summary" }],
     },
   ];
 
