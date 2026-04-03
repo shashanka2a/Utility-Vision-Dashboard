@@ -6,14 +6,20 @@ import {
   Search, Eye, Activity, Image as ImageIcon, 
   FileSpreadsheet, MessageSquare, Clipboard, Loader2,
   Plus, MoreHorizontal, ArrowUpDown, Calendar,
-  Clock, User
+  Clock, User, TrendingUp, BarChart as BarChartIcon,
+  CheckCircle2, AlertTriangle, Info
 } from "lucide-react";
-import { useEffect, useState } from "react";
-import { format } from "date-fns";
+import { useEffect, useState, useMemo } from "react";
+import { format, subDays, eachDayOfInterval, startOfWeek, endOfWeek } from "date-fns";
 import NextImage from "next/image";
 import { ImageViewer } from "./ImageViewer";
 import { ActivityCard } from "./ActivityCard";
 import type { Activity as ActivityType } from "./ActivityScreen";
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, 
+  Tooltip, ResponsiveContainer, Cell, PieChart, Pie,
+  LineChart, Line, AreaChart, Area
+} from 'recharts';
 
 interface ProjectDetailScreenProps {
   title: string;
@@ -38,11 +44,19 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
 
     setLoading(true);
     fetch('/api/activities')
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
       .then((activities: any[]) => {
         const matchProject = (a: any) => selectedProject === "All Projects" || a.project === selectedProject;
         const dateStr = format(selectedDate, "yyyy-MM-dd");
-        const matchDate = (a: any) => dataType === 'gallery' || a.timestamp.includes(dateStr) || a.isoTimestamp?.startsWith(dateStr);
+        
+        // Insights usually look at a broader range or specific types
+        const isInsights = dataType === 'activity';
+        const matchDate = (a: any) => 
+          dataType === 'gallery' || 
+          (isInsights ? true : (a.timestamp.includes(dateStr) || a.isoTimestamp?.startsWith(dateStr)));
 
         let filtered = activities.filter(a => matchProject(a) && matchDate(a));
 
@@ -61,14 +75,56 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
         } else if (dataType === 'checklists') {
           filtered = filtered.filter(a => a.activityType?.toLowerCase().includes('checklist'));
         } else if (dataType === 'activity') {
-          filtered = filtered.filter(a => a.action?.toLowerCase().includes('insight') || a.activityType?.toLowerCase().includes('metric'));
+          // Insights: filter for metrics/actions that provide analytical value
+          filtered = filtered.filter(a => 
+            a.action?.toLowerCase().includes('insight') || 
+            a.activityType?.toLowerCase().includes('metric') ||
+            a.metrics?.length > 0
+          );
         }
         
         setData(filtered);
       })
-      .catch(console.error)
+      .catch(err => {
+        console.error('Fetch error:', err);
+        // If it's a 404 or other error, show it gracefully
+        setData([]);
+      })
       .finally(() => setLoading(false));
   }, [dataType, selectedProject, selectedDate]);
+
+  // Derive Insights Data
+  const insightsMetrics = useMemo(() => {
+    if (dataType !== 'activity') return null;
+    
+    // Group by activity type for a distribution chart
+    const distribution: { [key: string]: number } = {};
+    data.forEach(item => {
+      const type = item.activityType || 'General';
+      distribution[type] = (distribution[type] || 0) + 1;
+    });
+
+    const chartData = Object.entries(distribution).map(([name, value]) => ({ name, value }));
+
+    // Group by day for a trend chart (last 14 days)
+    const trends: { [key: string]: number } = {};
+    const today = new Date();
+    for (let i = 13; i >= 0; i--) {
+      const d = format(subDays(today, i), "MMM d");
+      trends[d] = 0;
+    }
+
+    data.forEach(item => {
+      const d = item.isoTimestamp ? format(new Date(item.isoTimestamp), "MMM d") : null;
+      if (d && trends[d] !== undefined) {
+        trends[d]++;
+      }
+    });
+
+    const trendData = Object.entries(trends).map(([date, count]) => ({ date, count }));
+
+    return { chartData, trendData };
+  }, [data, dataType]);
 
   // Handle Gallery Rendering (Timeline Style)
   if (dataType === 'gallery') {
@@ -156,6 +212,192 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
           onClose={() => setViewerState({ ...viewerState, isOpen: false })}
           metadata={viewerState.list[viewerState.index]}
         />
+      </div>
+    );
+  }
+
+  // Handle Specialized Insights Dashboard (Graphs)
+  if (dataType === 'activity') {
+    return (
+      <div className="h-full flex flex-col bg-gray-50 flex-1 overflow-hidden uppercase-sidebar-fix">
+        <div className="flex-1 overflow-auto p-8">
+           {loading ? (
+             <div className="flex items-center justify-center h-full py-20">
+               <Loader2 className="w-10 h-10 animate-spin text-[#FF6633]" />
+             </div>
+           ) : data.length === 0 ? (
+             <div className="flex flex-col items-center justify-center py-24 text-center">
+               <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                 <Icon className="w-10 h-10 text-gray-300" />
+               </div>
+               <h3 className="text-xl font-bold text-gray-900 mb-2">No insights</h3>
+               <p className="text-gray-500 text-sm max-w-[280px] mx-auto">
+                 There are no automated insights gathered for this project period yet.
+               </p>
+             </div>
+           ) : (
+             <div className="max-w-6xl mx-auto space-y-8 pb-12">
+               {/* Summary Stats */}
+               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                 {[
+                   { label: 'Total Logs', value: data.length, icon: ClipboardList, color: 'text-blue-600', bg: 'bg-blue-50' },
+                   { label: 'Key Metrics', value: data.reduce((acc, curr) => acc + (curr.metrics?.length || 0), 0), icon: TrendingUp, color: 'text-green-600', bg: 'bg-green-50' },
+                   { label: 'Visual Checks', value: data.filter(d => d.photos?.length).length, icon: ImageIcon, color: 'text-purple-600', bg: 'bg-purple-50' },
+                   { label: 'Safety Issues', value: data.filter(d => d.activityType === 'Incidents').length, icon: AlertTriangle, color: 'text-red-600', bg: 'bg-red-50' },
+                 ].map((stat, i) => (
+                   <div key={i} className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm transition-all hover:shadow-md">
+                     <div className="flex items-center justify-between mb-4">
+                       <div className={`p-2.5 ${stat.bg} ${stat.color} rounded-xl`}>
+                         <stat.icon className="w-5 h-5" />
+                       </div>
+                       <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Project Snapshot</span>
+                     </div>
+                     <p className="text-2xl font-black text-gray-900">{stat.value}</p>
+                     <p className="text-[13px] text-gray-500 font-medium mt-0.5">{stat.label}</p>
+                   </div>
+                 ))}
+               </div>
+
+               {/* Charts Container */}
+               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                 {/* Bar Chart: Activity Distro */}
+                 <div className="bg-white p-8 rounded-2xl border border-gray-200 shadow-sm">
+                   <div className="flex items-center justify-between mb-8">
+                     <div>
+                       <h3 className="text-lg font-bold text-gray-900 tracking-tight">Record Distribution</h3>
+                       <p className="text-xs text-gray-500 mt-1 font-medium">Breakdown by activity type</p>
+                     </div>
+                     <div className="p-2 bg-gray-50 rounded-lg">
+                       <BarChartIcon className="w-4 h-4 text-gray-400" />
+                     </div>
+                   </div>
+                   <div className="h-[280px] w-full">
+                     <ResponsiveContainer width="100%" height="100%">
+                       <BarChart data={insightsMetrics?.chartData}>
+                         <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                         <XAxis 
+                            dataKey="name" 
+                            axisLine={false} 
+                            tickLine={false} 
+                            tick={{ fontSize: 11, fontWeight: 500, fill: '#94a3b8' }}
+                            dy={10}
+                         />
+                         <YAxis 
+                            axisLine={false} 
+                            tickLine={false} 
+                            tick={{ fontSize: 11, fontWeight: 500, fill: '#94a3b8' }} 
+                         />
+                         <Tooltip 
+                            cursor={{ fill: '#f8fafc' }}
+                            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '12px' }}
+                         />
+                         <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                           {insightsMetrics?.chartData.map((entry, index) => (
+                             <Cell key={`cell-${index}`} fill={['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'][index % 5]} />
+                           ))}
+                         </Bar>
+                       </BarChart>
+                     </ResponsiveContainer>
+                   </div>
+                 </div>
+
+                 {/* Area Chart: Activity Trend */}
+                 <div className="bg-white p-8 rounded-2xl border border-gray-200 shadow-sm">
+                   <div className="flex items-center justify-between mb-8">
+                     <div>
+                       <h3 className="text-lg font-bold text-gray-900 tracking-tight">Activity Momentum</h3>
+                       <p className="text-xs text-gray-500 mt-1 font-medium">Daily record count trends</p>
+                     </div>
+                     <div className="p-2 bg-indigo-50 rounded-lg">
+                       <TrendingUp className="w-4 h-4 text-indigo-500" />
+                     </div>
+                   </div>
+                   <div className="h-[280px] w-full">
+                     <ResponsiveContainer width="100%" height="100%">
+                       <AreaChart data={insightsMetrics?.trendData}>
+                         <defs>
+                           <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
+                             <stop offset="5%" stopColor="#6366f1" stopOpacity={0.1}/>
+                             <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                           </linearGradient>
+                         </defs>
+                         <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                         <XAxis 
+                            dataKey="date" 
+                            axisLine={false} 
+                            tickLine={false} 
+                            tick={{ fontSize: 11, fontWeight: 500, fill: '#94a3b8' }}
+                            dy={10}
+                         />
+                         <YAxis 
+                            axisLine={false} 
+                            tickLine={false} 
+                            tick={{ fontSize: 11, fontWeight: 500, fill: '#94a3b8' }} 
+                         />
+                         <Tooltip 
+                            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '12px' }}
+                         />
+                         <Area 
+                            type="monotone" 
+                            dataKey="count" 
+                            stroke="#6366f1" 
+                            strokeWidth={3}
+                            fillOpacity={1} 
+                            fill="url(#colorCount)" 
+                         />
+                       </AreaChart>
+                     </ResponsiveContainer>
+                   </div>
+                 </div>
+               </div>
+
+               {/* Detailed Logs List as Fallback/Details */}
+               <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+                  <div className="px-8 py-5 border-b border-gray-100 flex items-center justify-between bg-white sticky top-0 z-10 font_title">
+                    <h4 className="text-[14px] font-black text-gray-900 uppercase tracking-widest">Core Insight Records</h4>
+                    <span className="text-[12px] text-gray-400 font-medium">{data.length} entries</span>
+                  </div>
+                  <div className="divide-y divide-gray-100 max-h-[600px] overflow-auto">
+                    {data.slice(0, 50).map((item, idx) => (
+                      <div key={item.id || idx} className="p-6 hover:bg-gray-50 transition-colors group">
+                         <div className="flex items-start justify-between">
+                            <div className="flex gap-4">
+                               <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center font-black text-sm flex-shrink-0">
+                                 {item.employeeName?.charAt(0)}
+                               </div>
+                               <div>
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-[15px] font-bold text-gray-900">{item.employeeName}</span>
+                                    <span className="px-2 py-0.5 bg-gray-100 text-[10px] font-black text-gray-500 rounded uppercase tracking-wider">{item.activityType}</span>
+                                  </div>
+                                  <p className="text-[14px] text-gray-600 leading-relaxed max-w-2xl">
+                                    {item.action || item.metrics?.[0]?.value || 'Insight data record'}
+                                  </p>
+                                  <div className="flex items-center gap-4 mt-3">
+                                     <div className="flex items-center gap-1.5 text-[12px] text-gray-400 font-medium">
+                                        <Clock className="w-3.5 h-3.5" />
+                                        {format(new Date(item.isoTimestamp || item.timestamp), "MMM d, h:mm a")}
+                                     </div>
+                                     {item.photos?.length > 0 && (
+                                       <div className="flex items-center gap-1.5 text-[12px] text-indigo-500 font-bold bg-indigo-50 px-2 py-0.5 rounded">
+                                          <ImageIcon className="w-3.5 h-3.5" />
+                                          {item.photos.length} visual confirms
+                                       </div>
+                                     )}
+                                  </div>
+                               </div>
+                            </div>
+                            <button className="p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                               <MoreHorizontal className="w-5 h-5 text-gray-400" />
+                            </button>
+                         </div>
+                      </div>
+                    ))}
+                  </div>
+               </div>
+             </div>
+           )}
+        </div>
       </div>
     );
   }
