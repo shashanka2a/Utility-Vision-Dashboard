@@ -7,7 +7,7 @@ import {
   FileSpreadsheet, MessageSquare, Clipboard, Loader2,
   Plus, MoreHorizontal, ArrowUpDown, Calendar,
   Clock, User, TrendingUp, BarChart as BarChartIcon,
-  CheckCircle2, AlertTriangle, Info, Briefcase, ChevronDown
+  CheckCircle2, AlertTriangle, Info, Briefcase, ChevronDown, ChevronRight
 } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { format, subDays, eachDayOfInterval, startOfWeek, endOfWeek } from "date-fns";
@@ -250,86 +250,103 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
   // Handle Specialized Insights Dashboard (Graphs)
   if (dataType === 'activity') {
     return (
-      <div className="h-full flex flex-col bg-gray-50 flex-1 overflow-hidden uppercase-sidebar-fix">
-        {/* Insights Extended Toolbar */}
-        <div className="px-8 pt-6 pb-4 bg-white border-b border-gray-200 flex items-center justify-between shadow-sm relative z-20">
-            <div className="flex items-center gap-6">
-                {/* Time Presets */}
-                <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl w-fit">
-                   {(['7d', '30d', 'all', 'custom'] as const).map(range => (
-                     <button
-                       key={range}
-                       onClick={() => setTimeRange(range)}
-                       className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${timeRange === range ? 'bg-white text-[#FF6633] shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
-                     >
-                       {range === '7d' ? '7 Days' : range === '30d' ? '30 Days' : range === 'all' ? 'Full Summary' : 'Custom Range'}
-                     </button>
-                   ))}
-                </div>
-
-                <div className="h-6 w-[1px] bg-gray-200" />
-
-                {/* Inline Project Selector */}
-                <div className="relative group">
-                   <span className="absolute -top-4 left-0 text-[9px] font-black text-gray-400 uppercase tracking-widest">Active Project context</span>
+      <div className="h-full flex flex-col bg-[#F8F9FB] flex-1 overflow-hidden uppercase-sidebar-fix">
+        {/* Senior Designer Level Integrated Toolbar */}
+        <div className="px-8 py-3 bg-white border-b border-gray-200 flex items-center justify-between shadow-sm relative z-20">
+            {/* LEFT: PRIMARY SELECTION (PROJECT) */}
+            <div className="flex items-center gap-4">
+                <div className="relative">
+                   <div className="flex flex-col mb-1">
+                      <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest pl-1">Primary Scope</span>
+                   </div>
                    <button 
                      onClick={() => setProjectOpen(!projectOpen)}
-                     className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 rounded-xl transition-all border border-transparent hover:border-gray-200"
+                     className="group flex items-center gap-3 px-4 py-2.5 bg-gray-50 hover:bg-gray-100 rounded-2xl transition-all border border-gray-200/50 hover:border-[#FF6633]/30 shadow-sm"
                    >
-                      <div className="p-1.5 bg-[#FFF3EF] rounded-lg">
-                        <Briefcase className="w-3.5 h-3.5 text-[#FF6633]" />
+                      <div className="p-2 bg-white rounded-xl shadow-sm group-hover:scale-110 transition-transform">
+                        <Briefcase className="w-4 h-4 text-[#FF6633]" />
                       </div>
-                      <div className="flex flex-col items-start">
-                         <span className="text-[13px] font-bold text-gray-900 leading-tight">{selectedProject}</span>
+                      <div className="flex flex-col items-start pr-2">
+                         <span className="text-[14px] font-black text-gray-900 leading-none">{selectedProject}</span>
+                         <span className="text-[10px] text-gray-500 font-bold mt-1 opacity-70">Switch Context</span>
                       </div>
-                      <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform ${projectOpen ? 'rotate-180' : ''}`} />
+                      <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${projectOpen ? 'rotate-180' : ''}`} />
                    </button>
 
                    {projectOpen && (
-                     <div className="absolute top-14 left-0 w-64 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden py-1.5 animate-in fade-in slide-in-from-top-1 z-50">
+                     <div className="absolute top-16 left-0 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden py-2 animate-in fade-in slide-in-from-top-2 z-50">
+                        <div className="px-5 py-2 mb-1">
+                           <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Available Projects</span>
+                        </div>
                         {projectsList.map(p => (
                           <button
                             key={p}
                             onClick={() => { setSelectedProject(p); setProjectOpen(false); }}
-                            className={`w-full text-left px-5 py-2.5 text-[13px] hover:bg-gray-50 flex items-center justify-between ${selectedProject === p ? 'text-[#FF6633] font-bold bg-[#FFF3EF]' : 'text-gray-600'}`}
+                            className={`w-full text-left px-5 py-3 text-[13px] hover:bg-gray-50 flex items-center justify-between transition-colors ${selectedProject === p ? 'text-[#FF6633] font-black bg-[#FFF3EF]' : 'text-gray-600 font-medium'}`}
                           >
                             {p}
-                            {selectedProject === p && <div className="w-1.5 h-1.5 rounded-full bg-[#FF6633]" />}
+                            {selectedProject === p && <CheckCircle2 className="w-4 h-4 text-[#FF6633]" />}
                           </button>
                         ))}
                      </div>
                    )}
                 </div>
+
+                <div className="h-10 w-[1px] bg-gray-200 hidden md:block" />
+
+                {/* CENTER: ANALYTICAL WINDOW (QUICK TOGGLES) */}
+                <div className="flex flex-col">
+                   <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest pl-1 mb-1">Time Segment</span>
+                   <div className="flex items-center gap-1 bg-gray-100/80 p-1 rounded-2xl border border-gray-200/50">
+                      {(['7d', '30d', 'all', 'custom'] as const).map(range => (
+                        <button
+                          key={range}
+                          onClick={() => setTimeRange(range)}
+                          className={`px-5 py-2 text-[12px] font-black rounded-xl transition-all duration-200 ${timeRange === range ? 'bg-white text-[#FF6633] shadow-md scale-[1.02]' : 'text-gray-500 hover:text-gray-900 hover:bg-white/50'}`}
+                        >
+                          {range === '7d' ? '7D' : range === '30d' ? '30D' : range === 'all' ? 'Full Scope' : 'Custom'}
+                        </button>
+                      ))}
+                   </div>
+                </div>
             </div>
 
-            {/* Custom Date Inputs or Month Overview */}
-            <div className="flex items-center gap-3">
+            {/* RIGHT: DATA RANGE / PERIOD DISPLAY */}
+            <div className="flex items-end flex-col gap-1">
+               <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest pr-1">Active Range</span>
                {timeRange === 'custom' ? (
-                 <div className="flex items-center gap-2 bg-gray-50 p-1.5 rounded-xl border border-gray-100 animate-in fade-in slide-in-from-right-2">
-                    <div className="flex flex-col px-2">
-                       <span className="text-[8px] font-black text-gray-400 uppercase">Start</span>
+                 <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-2xl border-2 border-[#FF6633]/20 shadow-sm animate-in fade-in zoom-in-95 duration-300">
+                    <div className="flex flex-col group/date">
                        <input 
                          type="date" 
                          value={startDate} 
                          onChange={(e) => setStartDate(e.target.value)}
-                         className="bg-transparent border-none p-0 text-[12px] font-bold text-gray-900 focus:ring-0 cursor-pointer"
+                         className="bg-transparent border-none p-0 text-[13px] font-black text-gray-900 focus:ring-0 cursor-pointer"
                        />
+                       <span className="text-[8px] font-black text-[#FF6633] uppercase">Start Window</span>
                     </div>
-                    <div className="w-px h-6 bg-gray-200" />
-                    <div className="flex flex-col px-2">
-                       <span className="text-[8px] font-black text-gray-400 uppercase">End</span>
+                    <div className="flex items-center text-gray-300">
+                      <ChevronRight className="w-4 h-4" />
+                    </div>
+                    <div className="flex flex-col group/date">
                        <input 
                          type="date" 
                          value={endDate} 
                          onChange={(e) => setEndDate(e.target.value)}
-                         className="bg-transparent border-none p-0 text-[12px] font-bold text-gray-900 focus:ring-0 cursor-pointer"
+                         className="bg-transparent border-none p-0 text-[13px] font-black text-gray-900 focus:ring-0 cursor-pointer"
                        />
+                       <span className="text-[8px] font-black text-[#FF6633] uppercase">End Window</span>
                     </div>
                  </div>
                ) : (
-                 <div className="text-[12px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2 bg-gray-50 px-4 py-2.5 rounded-xl border border-gray-100 shadow-sm transition-all hover:bg-white hover:shadow-md cursor-default">
-                    <Calendar className="w-4 h-4 text-[#FF6633]" />
-                    Summary Period: <span className="text-gray-900">{format(selectedDate, "MMMM yyyy")}</span>
+                 <div className="flex items-center gap-3 bg-gray-50 px-5 py-2.5 rounded-2xl border border-gray-200 group cursor-default transition-all hover:bg-white hover:shadow-md">
+                    <div className="p-1.5 bg-white rounded-lg shadow-sm">
+                       <Calendar className="w-4 h-4 text-[#FF6633]" />
+                    </div>
+                    <div className="flex flex-col">
+                       <span className="text-[14px] font-black text-gray-900 leading-none">{format(selectedDate, "MMMM yyyy")}</span>
+                       <span className="text-[10px] text-gray-500 font-bold mt-1">Summary Snapshot</span>
+                    </div>
                  </div>
                )}
             </div>
