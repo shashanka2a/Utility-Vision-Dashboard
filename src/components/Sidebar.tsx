@@ -39,15 +39,8 @@ function DashboardSubNav({ pathname }: { pathname: string }) {
   const NAV = [
     { label: "Activity", icon: BarChart3, path: "/activity" },
     { label: "Reports",  icon: FileText,  path: "/reports" },
-    {
-      label: "Insights",
-      icon: TrendingUp,
-      path: "/insights",
-      children: [{ label: "Summary", path: "/insights/summary" }],
-    },
+    { label: "Insights", icon: TrendingUp, path: "/insights/summary" },
   ];
-
-  const [insightsOpen, setInsightsOpen] = useState(pathname.startsWith("/insights"));
 
   return (
     <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
@@ -57,37 +50,6 @@ function DashboardSubNav({ pathname }: { pathname: string }) {
       <div className="flex-1 overflow-y-auto px-3 space-y-0.5 pt-2">
         {NAV.map((item) => {
           const isActive = pathname.startsWith(item.path);
-          if (item.children) {
-            return (
-              <div key={item.label}>
-                <button
-                  onClick={() => setInsightsOpen(o => !o)}
-                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-[15px] rounded-lg transition-all focus:outline-none ${
-                    isActive ? "text-[#2196F3] bg-[#2196F3]/5 font-semibold" : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                  }`}
-                >
-                  <item.icon className={`w-5 h-5 flex-shrink-0 ${isActive ? "text-[#2196F3]" : "text-gray-400"}`} strokeWidth={1.5} />
-                  <span className="flex-1 text-left">{item.label}</span>
-                  {insightsOpen ? <ChevronDown className="w-4 h-4 text-gray-400" /> : <ChevronRight className="w-4 h-4 text-gray-400" />}
-                </button>
-                {insightsOpen && (
-                  <div className="ml-9 mt-1 space-y-0.5">
-                    {item.children.map(child => (
-                      <Link
-                        key={child.path}
-                        href={child.path}
-                        className={`block px-3 py-2 text-[14px] rounded-lg transition-colors ${
-                          pathname === child.path ? "text-[#2196F3] font-semibold bg-[#2196F3]/5" : "text-gray-500 hover:text-gray-900"
-                        }`}
-                      >
-                        {child.label}
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          }
           return (
             <Link
               key={item.label}
