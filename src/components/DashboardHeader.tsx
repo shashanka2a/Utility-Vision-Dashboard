@@ -8,6 +8,7 @@ import {
 import { useProject } from "@/context/ProjectContext";
 import { format, addDays, subDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isToday, isWeekend, isPast } from "date-fns";
 import { useState, useRef, useEffect } from "react";
+import { useSearchParams, usePathname } from "next/navigation";
 
 function CalendarDropdown({ selectedDate, onSelect }: { selectedDate: Date, onSelect: (date: Date) => void }) {
   const [currentMonth, setCurrentMonth] = useState(startOfMonth(selectedDate));
@@ -80,6 +81,10 @@ function CalendarDropdown({ selectedDate, onSelect }: { selectedDate: Date, onSe
 
 export function DashboardHeader() {
   const { selectedDate, setSelectedDate, selectedProject, setSelectedProject } = useProject();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const view = searchParams.get("view");
+
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [projectOpen, setProjectOpen] = useState(false);
   const [projects, setProjects] = useState<string[]>([]);
@@ -97,6 +102,9 @@ export function DashboardHeader() {
   const handleToday = () => setSelectedDate(new Date());
 
   const formattedDate = format(selectedDate, "EEE d MMM yyyy");
+
+  const isInsightsView = view === "project-insights" || pathname.includes("/insights/summary");
+  const showProjectSelector = selectedProject === "All Projects" || isInsightsView;
 
   const getSignatureStatus = (date: Date) => {
     const dayStr = format(date, "yyyy-MM-dd");
@@ -119,32 +127,34 @@ export function DashboardHeader() {
   return (
     <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 flex-shrink-0 z-10">
       <div className="flex items-center gap-2">
-        {/* Project Selector */}
-        <div className="relative mr-2" ref={projectRef}>
-          <button 
-            onClick={() => setProjectOpen(!projectOpen)}
-            className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-[13px] font-bold text-gray-700 hover:bg-gray-100 transition-colors shadow-sm min-w-[140px]"
-          >
-            <Briefcase className="w-3.5 h-3.5 text-[#FF6633]" />
-            <span className="truncate max-w-[120px]">{selectedProject}</span>
-            <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
-          </button>
-          
-          {projectOpen && (
-            <div className="absolute top-12 left-0 w-64 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden z-50 py-1 animate-in fade-in slide-in-from-top-1">
-              {projects.map(p => (
-                <button
-                  key={p}
-                  onClick={() => { setSelectedProject(p); setProjectOpen(false); }}
-                  className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center justify-between ${selectedProject === p ? 'text-[#FF6633] font-bold bg-[#FFF3EF]' : 'text-gray-700'}`}
-                >
-                  {p}
-                  {selectedProject === p && <div className="w-1.5 h-1.5 rounded-full bg-[#FF6633]" />}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        {/* Project Selector - Shown ONLY on Insights or when Global */}
+        {showProjectSelector && (
+          <div className="relative mr-2" ref={projectRef}>
+            <button 
+              onClick={() => setProjectOpen(!projectOpen)}
+              className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-[13px] font-bold text-gray-700 hover:bg-gray-100 transition-colors shadow-sm min-w-[140px]"
+            >
+              <Briefcase className="w-3.5 h-3.5 text-[#FF6633]" />
+              <span className="truncate max-w-[120px]">{selectedProject}</span>
+              <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
+            </button>
+            
+            {projectOpen && (
+              <div className="absolute top-12 left-0 w-64 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden z-50 py-1 animate-in fade-in slide-in-from-top-1">
+                {projects.map(p => (
+                  <button
+                    key={p}
+                    onClick={() => { setSelectedProject(p); setProjectOpen(false); }}
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center justify-between ${selectedProject === p ? 'text-[#FF6633] font-bold bg-[#FFF3EF]' : 'text-gray-700'}`}
+                  >
+                    {p}
+                    {selectedProject === p && <div className="w-1.5 h-1.5 rounded-full bg-[#FF6633]" />}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         <button onClick={handleToday} className="px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-400 font-medium hover:bg-gray-100 transition-colors">
           Today
