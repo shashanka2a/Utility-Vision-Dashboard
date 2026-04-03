@@ -33,6 +33,7 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [timeRange, setTimeRange] = useState<'1d' | '7d' | '30d' | 'all'>('all');
   const [viewerState, setViewerState] = useState<{ isOpen: boolean; index: number; list: any[] }>({
     isOpen: false,
     index: 0,
@@ -52,11 +53,19 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
         const matchProject = (a: any) => selectedProject === "All Projects" || a.project === selectedProject;
         const dateStr = format(selectedDate, "yyyy-MM-dd");
         
-        // Insights usually look at a broader range or specific types
-        const isInsights = dataType === 'activity';
-        const matchDate = (a: any) => 
-          dataType === 'gallery' || 
-          (isInsights ? true : (a.timestamp.includes(dateStr) || a.isoTimestamp?.startsWith(dateStr)));
+        const matchDate = (a: any) => {
+          if (dataType === 'gallery') return true;
+          if (dataType === 'activity') {
+            if (timeRange === 'all') return true;
+            const itemDate = new Date(a.isoTimestamp || a.timestamp);
+            const refDate = new Date(selectedDate);
+            if (timeRange === '1d') return format(itemDate, "yyyy-MM-dd") === dateStr;
+            const diffDays = Math.floor((refDate.getTime() - itemDate.getTime()) / (1000 * 60 * 60 * 24));
+            if (timeRange === '7d') return diffDays >= 0 && diffDays < 7;
+            if (timeRange === '30d') return diffDays >= 0 && diffDays < 30;
+          }
+          return a.timestamp.includes(dateStr) || a.isoTimestamp?.startsWith(dateStr);
+        };
 
         let filtered = activities.filter(a => matchProject(a) && matchDate(a));
 
@@ -75,7 +84,6 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
         } else if (dataType === 'checklists') {
           filtered = filtered.filter(a => a.activityType?.toLowerCase().includes('checklist'));
         } else if (dataType === 'activity') {
-          // Insights: filter for metrics/actions that provide analytical value
           filtered = filtered.filter(a => 
             a.action?.toLowerCase().includes('insight') || 
             a.activityType?.toLowerCase().includes('metric') ||
@@ -87,11 +95,10 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
       })
       .catch(err => {
         console.error('Fetch error:', err);
-        // If it's a 404 or other error, show it gracefully
         setData([]);
       })
       .finally(() => setLoading(false));
-  }, [dataType, selectedProject, selectedDate]);
+  }, [dataType, selectedProject, selectedDate, timeRange]);
 
   // Derive Insights Data
   const insightsMetrics = useMemo(() => {
@@ -158,6 +165,8 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
                 <input 
                   type="text" 
                   placeholder="Find assets..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6633]/10 focus:border-[#FF6633] transition-all"
                 />
              </div>
@@ -207,7 +216,7 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
 
         <ImageViewer 
           isOpen={viewerState.isOpen}
-          photos={viewerState.list.map(p => p.url)}
+          photos={viewerState.list.map((p: any) => p.url)}
           initialIndex={viewerState.index}
           onClose={() => setViewerState({ ...viewerState, isOpen: false })}
           metadata={viewerState.list[viewerState.index]}
@@ -220,6 +229,27 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
   if (dataType === 'activity') {
     return (
       <div className="h-full flex flex-col bg-gray-50 flex-1 overflow-hidden uppercase-sidebar-fix">
+        {/* Insights Toolbar */}
+        <div className="px-8 pt-6 pb-4 bg-white border-b border-gray-200 flex items-center justify-between">
+            <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-xl">
+               {(['1d', '7d', '30d', 'all'] as const).map(range => (
+                 <button
+                   key={range}
+                   onClick={() => setTimeRange(range)}
+                   className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${timeRange === range ? 'bg-white text-[#FF6633] shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                 >
+                   {range === '1d' ? 'Today' : range === '7d' ? '7 Days' : range === '30d' ? '30 Days' : 'All Data'}
+                 </button>
+               ))}
+            </div>
+            <div className="flex items-center gap-4">
+               <div className="text-[12px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                 <Calendar className="w-3.5 h-3.5" />
+                 Analyzing: <span className="text-gray-900">{timeRange === '1d' ? format(selectedDate, "MMM d") : timeRange.toUpperCase()}</span>
+               </div>
+            </div>
+        </div>
+
         <div className="flex-1 overflow-auto p-8">
            {loading ? (
              <div className="flex items-center justify-center h-full py-20">
@@ -230,9 +260,9 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
                <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
                  <Icon className="w-10 h-10 text-gray-300" />
                </div>
-               <h3 className="text-xl font-bold text-gray-900 mb-2">No insights</h3>
+               <h3 className="text-xl font-bold text-gray-900 mb-2">No insights for this period</h3>
                <p className="text-gray-500 text-sm max-w-[280px] mx-auto">
-                 There are no automated insights gathered for this project period yet.
+                 Try expanding the time range or selecting a different date to see analytical records.
                </p>
              </div>
            ) : (
@@ -292,7 +322,7 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
                             contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '12px' }}
                          />
                          <Bar dataKey="value" radius={[6, 6, 0, 0]}>
-                           {insightsMetrics?.chartData.map((entry, index) => (
+                           {insightsMetrics?.chartData.map((_entry: any, index: number) => (
                              <Cell key={`cell-${index}`} fill={['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'][index % 5]} />
                            ))}
                          </Bar>
@@ -351,7 +381,7 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
                  </div>
                </div>
 
-               {/* Detailed Logs List as Fallback/Details */}
+               {/* Detailed Logs List */}
                <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
                   <div className="px-8 py-5 border-b border-gray-100 flex items-center justify-between bg-white sticky top-0 z-10 font_title">
                     <h4 className="text-[14px] font-black text-gray-900 uppercase tracking-widest">Core Insight Records</h4>
@@ -462,7 +492,7 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
 
         <ImageViewer 
           isOpen={viewerState.isOpen}
-          photos={viewerState.list.map(f => f.url)}
+          photos={viewerState.list.map((f: any) => f.url)}
           initialIndex={viewerState.index}
           onClose={() => setViewerState({ ...viewerState, isOpen: false })}
           metadata={viewerState.list[viewerState.index]}
@@ -522,7 +552,7 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
             </div>
           ) : (
             <div className="divide-y divide-gray-100">
-              {data.map((item, idx) => {
+              {data.map((item: any, idx: number) => {
                  const note = item.metrics?.find((m: any) => {
                     const l = (m.label || m.name || '').toLowerCase();
                     return l.includes('note') || l.includes('desc') || l.includes('summary');
