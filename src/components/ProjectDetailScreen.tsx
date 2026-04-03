@@ -232,24 +232,31 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
   if (dataType === 'activity') {
     return (
       <div className="h-full flex flex-col bg-gray-50 flex-1 overflow-hidden uppercase-sidebar-fix">
-        {/* Insights Toolbar */}
-        <div className="px-8 pt-6 pb-4 bg-white border-b border-gray-200 flex items-center justify-between">
-            <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-xl">
-               {(['1d', '7d', '30d', 'all'] as const).map(range => (
+        {/* Insights Header */}
+        <div className="px-8 pt-8 pb-5 bg-white border-b border-gray-200">
+            <div className="flex items-center justify-between mb-4">
+               <div>
+                  <h2 className="text-xl font-black text-gray-900 tracking-tight">Insights Summary</h2>
+                  <p className="text-xs text-gray-500 font-medium mt-0.5">Project performance and activity trends overview</p>
+               </div>
+               <div className="flex items-center gap-4">
+                  <div className="text-[12px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                    <Calendar className="w-3.5 h-3.5" />
+                    Period: <span className="text-gray-900">{timeRange === 'all' ? 'All History' : timeRange.toUpperCase() + ' Window'}</span>
+                  </div>
+               </div>
+            </div>
+            
+            <div className="flex items-center gap-2 bg-gray-50 p-1 rounded-xl w-fit">
+               {(['7d', '30d', 'all'] as const).map(range => (
                  <button
                    key={range}
                    onClick={() => setTimeRange(range)}
                    className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${timeRange === range ? 'bg-white text-[#FF6633] shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
                  >
-                   {range === '1d' ? 'Today' : range === '7d' ? '7 Days' : range === '30d' ? '30 Days' : 'All Data'}
+                   {range === '7d' ? '7 Days' : range === '30d' ? '30 Days' : 'Full Summary'}
                  </button>
                ))}
-            </div>
-            <div className="flex items-center gap-4">
-               <div className="text-[12px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                 <Calendar className="w-3.5 h-3.5" />
-                 Analyzing: <span className="text-gray-900">{timeRange === '1d' ? format(selectedDate, "MMM d") : timeRange.toUpperCase()}</span>
-               </div>
             </div>
         </div>
 
