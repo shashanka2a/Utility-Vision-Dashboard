@@ -25,7 +25,7 @@ interface ProjectDetailScreenProps {
   title: string;
   icon: any;
   emptyMessage?: string;
-  dataType?: 'activity' | 'attachments' | 'checklists' | 'toolbox' | 'observations' | 'incidents' | 'notes' | 'survey' | 'directory' | 'gallery' | 'settings' | 'work-logs';
+  dataType?: 'activity' | 'attachments' | 'checklists' | 'safety-talks' | 'observations' | 'incidents' | 'notes' | 'survey' | 'directory' | 'gallery' | 'settings' | 'metrics' | 'chemicals';
 }
 
 export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType }: ProjectDetailScreenProps) {
@@ -75,12 +75,15 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
           filtered = filtered.filter(a => a.activityType === 'Observations');
         } else if (dataType === 'incidents') {
           filtered = filtered.filter(a => a.activityType === 'Incidents');
-        } else if (dataType === 'work-logs') {
-          filtered = filtered.filter(a => a.activityType?.toLowerCase().includes('log') || a.activityType === 'Daily Inspection');
+        } else if (dataType === 'metrics') {
+          // Actual metrics stored in the DB as an array
+          filtered = filtered.filter(a => a.metrics && a.metrics.length > 0);
+        } else if (dataType === 'chemicals') {
+          filtered = filtered.filter(a => a.activityType === 'Chemicals');
         } else if (dataType === 'survey') {
           filtered = filtered.filter(a => a.activityType === 'Survey');
-        } else if (dataType === 'toolbox') {
-          filtered = filtered.filter(a => a.activityType === 'Toolbox Talk' || a.activityType === 'Safety Meeting');
+        } else if (dataType === 'safety-talks') {
+          filtered = filtered.filter(a => a.activityType === 'Toolbox Talk' || a.activityType === 'Safety Meeting' || a.activityType === 'Safety Talks');
         } else if (dataType === 'checklists') {
           filtered = filtered.filter(a => a.activityType?.toLowerCase().includes('checklist'));
         } else if (dataType === 'activity') {

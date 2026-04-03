@@ -54,8 +54,10 @@ function ProjectDashboardContent() {
       return <ProjectDetailScreen title="Insights" icon={Activity} dataType="activity" />;
 
     // ── Daily logs ───────────────────────────────────────────
-    case "work-logs":
-      return <ProjectDetailScreen title="Work Logs" icon={Calendar} dataType="work-logs" />;
+    case "metrics":
+      return <ProjectDetailScreen title="Metrics" icon={Calendar} dataType="metrics" />;
+    case "chemicals":
+      return <ProjectDetailScreen title="Chemicals" icon={Activity} dataType="chemicals" />;
     case "notes":
       return <ProjectDetailScreen title="Notes" icon={MessageSquare} dataType="notes" />;
     case "attachments":
@@ -66,8 +68,8 @@ function ProjectDashboardContent() {
     // ── Safety & QC ──────────────────────────────────────────
     case "checklists":
       return <ProjectDetailScreen title="Checklists" icon={ClipboardList} dataType="checklists" />;
-    case "toolbox-talks":
-      return <ProjectDetailScreen title="Toolbox Talks" icon={PenTool} dataType="toolbox" />;
+    case "safety-talks":
+      return <ProjectDetailScreen title="Safety Talks" icon={PenTool} dataType="safety-talks" />;
     case "observations":
       return <ProjectDetailScreen title="Observations" icon={Eye} dataType="observations" />;
     case "incidents":

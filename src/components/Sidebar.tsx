@@ -119,7 +119,8 @@ const PROJECT_NAV = [
   {
     label: "Daily logs", icon: Calendar,
     children: [
-      { label: "Work logs",   view: "work-logs" },
+      { label: "Metrics",     view: "metrics" },
+      { label: "Chemicals",   view: "chemicals" },
       { label: "Notes",       view: "notes" },
       { label: "Attachments", view: "attachments" },
       { label: "Survey",      view: "survey" },
@@ -129,7 +130,7 @@ const PROJECT_NAV = [
     label: "Safety & QC", icon: Briefcase,
     children: [
       { label: "Checklists",    view: "checklists" },
-      { label: "Toolbox talks", view: "toolbox-talks" },
+      { label: "Safety talks",  view: "safety-talks" },
       { label: "Observations",  view: "observations" },
       { label: "Incidents",     view: "incidents" },
     ],
