@@ -7,7 +7,8 @@ import {
   FileSpreadsheet, MessageSquare, Clipboard, Loader2,
   Plus, MoreHorizontal, ArrowUpDown, Calendar,
   Clock, User, TrendingUp, BarChart as BarChartIcon,
-  CheckCircle2, AlertTriangle, Info, Briefcase, ChevronDown, ChevronRight
+  CheckCircle2, AlertTriangle, Info, Briefcase, ChevronDown, ChevronRight,
+  Maximize2, Share2
 } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { format, subDays, eachDayOfInterval, startOfWeek, endOfWeek } from "date-fns";
@@ -43,6 +44,8 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
     index: 0,
     list: []
   });
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
+  const [filterType, setFilterType] = useState<'all' | 'photos' | 'documents'>('all');
 
   useEffect(() => {
     fetch('/api/projects').then(res => res.json()).then(p => {
@@ -165,74 +168,199 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
         isoDate: item.isoTimestamp?.split('T')[0] || item.timestamp.split(' at ')[0],
         project: item.project,
         description: item.metrics?.find((m: any) => m.label?.toLowerCase().includes('note') || m.label?.toLowerCase().includes('desc'))?.value || 'Uploaded in ' + item.activityType,
-        fileName: url.split('/').pop()
+        fileName: url.split('/').pop(),
+        activityType: item.activityType
       }))
     );
 
+    // Apply Filters and Search
+    const filteredPhotos = allPhotos.filter(p => {
+      const matchesSearch = 
+        p.fileName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.uploadedBy?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.project?.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      return matchesSearch;
+    });
+
+    // Sort
+    const sortedPhotos = [...filteredPhotos].sort((a, b) => {
+      if (sortOrder === 'newest') return b.isoDate.localeCompare(a.isoDate);
+      return a.isoDate.localeCompare(b.isoDate);
+    });
+
     const groups: { [key: string]: any[] } = {};
-    allPhotos.forEach(p => {
+    sortedPhotos.forEach(p => {
       const d = p.isoDate;
       if (!groups[d]) groups[d] = [];
       groups[d].push(p);
     });
 
-    const sortedDates = Object.keys(groups).sort((a, b) => b.localeCompare(a));
+    const sortedDates = Object.keys(groups).sort((a, b) => 
+      sortOrder === 'newest' ? b.localeCompare(a) : a.localeCompare(b)
+    );
 
     return (
-      <div className="h-full flex flex-col bg-gray-50 flex-1 overflow-hidden">
-        <div className="px-8 pt-8 pb-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-             <div className="relative w-64">
-                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input 
-                  type="text" 
-                  placeholder="Find assets..." 
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6633]/10 focus:border-[#FF6633] transition-all"
-                />
+      <div className="h-full flex flex-col bg-[#F8F9FB] flex-1 overflow-hidden">
+        {/* Gallery Hero Header */}
+        <div className="px-8 pt-8 pb-6 bg-white border-b border-gray-100 flex flex-col gap-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-black text-gray-900 tracking-tight">Project Media</h2>
+              <p className="text-[13px] text-gray-500 font-medium mt-1">Exploring {allPhotos.length} assets across {selectedProject}</p>
+            </div>
+            <div className="flex items-center gap-3">
+               <button className="flex items-center gap-2 px-4 py-2 bg-[#FF6633] text-white rounded-xl text-sm font-black shadow-lg shadow-[#FF6633]/20 hover:scale-[1.02] active:scale-95 transition-all">
+                  <Plus className="w-4 h-4" />
+                  <span>Upload Assets</span>
+               </button>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between gap-4">
+             <div className="flex items-center gap-3 flex-1 max-w-2xl">
+                <div className="relative flex-1 group">
+                   <Search className="w-4 h-4 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2 group-focus-within:text-[#FF6633] transition-colors" />
+                   <input 
+                     type="text" 
+                     placeholder="Search by filename, contributor, or notes..." 
+                     value={searchQuery}
+                     onChange={(e) => setSearchQuery(e.target.value)}
+                     className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-transparent rounded-2xl text-[13px] font-medium focus:outline-none focus:ring-2 focus:ring-[#FF6633]/10 focus:bg-white focus:border-[#FF6633]/30 transition-all"
+                   />
+                </div>
+                <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-2xl border border-gray-200">
+                   <button 
+                     onClick={() => setSortOrder('newest')}
+                     className={`px-4 py-2 text-[11px] font-black rounded-xl transition-all ${sortOrder === 'newest' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                   >
+                     Newest
+                   </button>
+                   <button 
+                     onClick={() => setSortOrder('oldest')}
+                     className={`px-4 py-2 text-[11px] font-black rounded-xl transition-all ${sortOrder === 'oldest' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                   >
+                     Oldest
+                   </button>
+                </div>
+
+                <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-2xl border border-gray-200 ml-2">
+                   {(['all', 'photos', 'documents'] as const).map(type => (
+                     <button 
+                       key={type}
+                       onClick={() => setFilterType(type)}
+                       className={`px-4 py-2 text-[11px] font-black rounded-xl transition-all uppercase tracking-tighter ${filterType === type ? 'bg-white text-[#FF6633] shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                     >
+                       {type}
+                     </button>
+                   ))}
+                </div>
+             </div>
+
+             <div className="flex items-center gap-2">
+                <div className="h-8 w-[1px] bg-gray-200 mx-2" />
+                <button className="p-2.5 bg-gray-50 text-gray-500 rounded-xl hover:bg-white hover:text-gray-900 border border-gray-100 transition-all hover:shadow-sm">
+                   <ArrowUpDown className="w-4 h-4" />
+                </button>
+                <button className="p-2.5 bg-gray-50 text-gray-500 rounded-xl hover:bg-white hover:text-gray-900 border border-gray-100 transition-all hover:shadow-sm">
+                   <MoreHorizontal className="w-4 h-4" />
+                </button>
              </div>
           </div>
         </div>
 
-        <div className="flex-1 overflow-auto p-8 pt-4 space-y-10">
+        <div className="flex-1 overflow-auto p-8 pt-6">
           {loading ? (
-            <div className="flex flex-col items-center justify-center h-64 text-gray-400">
-               <Loader2 className="w-8 h-8 animate-spin mb-4" />
-               <p className="text-sm font-medium">Scanning project history...</p>
+            <div className="flex flex-col items-center justify-center h-64">
+               <div className="relative">
+                  <div className="w-16 h-16 border-4 border-[#FF6633]/10 border-t-[#FF6633] rounded-full animate-spin" />
+                  <Loader2 className="w-6 h-6 text-[#FF6633] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
+               </div>
+               <p className="text-sm font-black text-gray-900 mt-6 tracking-tight uppercase">Indexing Visual Repository</p>
+               <p className="text-[11px] text-gray-400 font-bold mt-1 uppercase tracking-widest">Please hold while we sync content</p>
             </div>
-          ) : sortedDates.length === 0 ? (
+          ) : filteredPhotos.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center">
-              <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                <ImageIcon className="w-10 h-10 text-gray-300" />
+              <div className="w-24 h-24 bg-white rounded-[2rem] shadow-xl shadow-gray-200/50 flex items-center justify-center mx-auto mb-8 animate-in zoom-in-50 duration-500">
+                <ImageIcon className="w-10 h-10 text-gray-200" />
               </div>
-              <h3 className="text-lg font-bold text-gray-900">No media found</h3>
-              <p className="text-gray-500 max-w-xs mx-auto">Upload attachments or submit logs with photos to see them here.</p>
+              <h3 className="text-xl font-black text-gray-900 tracking-tight">Search Result Empty</h3>
+              <p className="text-gray-400 text-[13px] font-medium max-w-xs mx-auto mt-2">
+                We couldn't find any assets matching "{searchQuery}". Try broadening your search or clearing filters.
+              </p>
+              <button 
+                onClick={() => setSearchQuery('')}
+                className="mt-6 px-6 py-2.5 bg-gray-900 text-white rounded-xl text-xs font-black hover:bg-black transition-all"
+              >
+                Clear Search
+              </button>
             </div>
           ) : (
-            sortedDates.map(date => (
-              <div key={date}>
-                <h3 className="text-sm font-bold text-gray-900 border-b border-gray-100 pb-2 mb-4">
-                  {date === format(new Date(), 'yyyy-MM-dd') ? 'Today' : date}
-                </h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-                  {groups[date].map((photo, index) => (
-                    <div 
-                      key={index} 
-                      className="group relative aspect-square bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 cursor-pointer"
-                      onClick={() => setViewerState({ isOpen: true, index: allPhotos.indexOf(photo), list: allPhotos })}
-                    >
-                      <NextImage 
-                        src={photo.url} 
-                        alt="Gallery item"
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                    </div>
-                  ))}
+            <div className="space-y-12">
+              {sortedDates.map(date => (
+                <div key={date} className="group/section">
+                  <div className="flex items-center gap-4 mb-6 sticky top-0 z-10 bg-[#F8F9FB]/80 backdrop-blur-md py-2">
+                    <h3 className="text-[14px] font-black text-gray-900 uppercase tracking-[0.2em]">
+                      {date === format(new Date(), 'yyyy-MM-dd') ? 'Today\'s Activity' : format(new Date(date), 'MMMM d, yyyy')}
+                    </h3>
+                    <div className="h-[2px] flex-1 bg-gradient-to-r from-gray-200 to-transparent" />
+                    <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest">{groups[date].length} Assets</span>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
+                    {groups[date].map((photo, index) => (
+                      <div 
+                        key={index} 
+                        className="group relative aspect-square bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 cursor-pointer"
+                        onClick={() => setViewerState({ isOpen: true, index: allPhotos.indexOf(photo), list: allPhotos })}
+                      >
+                        <NextImage 
+                          src={photo.url} 
+                          alt="Gallery item"
+                          fill
+                          sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 15vw"
+                          className="object-cover group-hover:scale-110 transition-transform duration-700"
+                        />
+                        
+                        {/* Premium Hover Overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300">
+                           <div className="absolute top-3 left-3">
+                              <span className="px-2 py-1 bg-white/20 backdrop-blur-md text-[9px] font-black text-white rounded-lg border border-white/20 uppercase tracking-tighter">
+                                 {photo.activityType}
+                              </span>
+                           </div>
+                           
+                           <div className="absolute top-3 right-3 flex flex-col gap-2 translate-x-4 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-300 delay-75">
+                              <div className="w-8 h-8 bg-white text-gray-900 rounded-xl flex items-center justify-center shadow-lg hover:bg-[#FF6633] hover:text-white transition-colors">
+                                 <Maximize2 className="w-4 h-4" />
+                              </div>
+                              <div className="w-8 h-8 bg-white/10 backdrop-blur-md text-white rounded-xl flex items-center justify-center border border-white/20 hover:bg-white/30 transition-colors">
+                                 <Share2 className="w-4 h-4" />
+                              </div>
+                           </div>
+
+                           <div className="absolute bottom-0 left-0 right-0 p-4 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 delay-100">
+                              <p className="text-[10px] font-black text-[#FF6633] uppercase tracking-widest mb-1">{photo.uploadedBy}</p>
+                              <p className="text-[12px] text-white font-bold line-clamp-2 leading-tight drop-shadow-sm">
+                                 {photo.description}
+                              </p>
+                              <div className="flex items-center gap-1.5 mt-3 text-[9px] font-bold text-gray-400">
+                                 <Clock className="w-3 h-3" />
+                                 {photo.date.split(' at ')[1] || 'Synchronized'}
+                              </div>
+                           </div>
+                        </div>
+
+                        {/* Selection check (visual only) */}
+                        <div className="absolute top-3 left-3 w-5 h-5 bg-white/10 backdrop-blur-md border border-white/30 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="w-2 h-2 bg-white rounded-full" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))
+              ))}
+            </div>
           )}
         </div>
 
