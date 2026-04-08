@@ -21,6 +21,7 @@ import {
   Tooltip, ResponsiveContainer, Cell, PieChart, Pie,
   LineChart, Line, AreaChart, Area
 } from 'recharts';
+import { DirectoryScreen } from "./DirectoryScreen";
 
 interface ProjectDetailScreenProps {
   title: string;
@@ -1170,6 +1171,331 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
              </div>
            )}
         </div>
+      </div>
+    );
+  }
+  // ─── Directory Dashboard ───
+  if (dataType === 'directory') {
+    return <DirectoryScreen projectFilter={selectedProject} />;
+  }
+
+  // ─── Notes Dashboard ───
+  if (dataType === 'notes') {
+    return (
+      <div className="h-full flex flex-col bg-gray-50 flex-1 overflow-hidden">
+        <div className="px-8 py-5 bg-white border-b border-gray-100 flex-shrink-0">
+          <h2 className="text-base font-semibold text-gray-900">Notes</h2>
+          <p className="text-xs text-gray-400 mt-0.5">
+            {format(selectedDate, 'EEEE, MMMM d yyyy')} · {notesData.length} log{notesData.length !== 1 ? 's' : ''}
+          </p>
+        </div>
+        <div className="flex-1 overflow-auto px-8 py-6">
+          {notesLoading ? (
+            <div className="flex justify-center h-48 items-center"><Loader2 className="w-8 h-8 animate-spin text-[#FF6633]" /></div>
+          ) : notesData.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-48 gap-3 text-gray-400">
+              <MessageSquare className="w-10 h-10 text-gray-200" />
+              <p className="text-sm font-medium">No notes for this date</p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {notesData.map((note, idx) => (
+                <div key={note.id || idx} className="bg-white rounded-xl border border-gray-200 overflow-hidden hidden-shadow hover:shadow-md transition-shadow">
+                  <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                    <div className="flex items-center gap-3">
+                       <div className="w-8 h-8 rounded-full bg-[#FF6633]/10 flex items-center justify-center text-[#FF6633] font-bold text-sm">{idx + 1}</div>
+                       <div className="flex flex-col">
+                         <span className="text-sm font-semibold text-gray-900">General Note</span>
+                         {note.logged_at && <span className="text-xs text-gray-400">{format(new Date(note.logged_at), 'h:mm a')}</span>}
+                       </div>
+                    </div>
+                    {note.category && (
+                      <span className="px-3 py-1 bg-gray-100 rounded-full text-[11px] font-bold text-gray-600 uppercase tracking-wider">
+                        {note.category}
+                      </span>
+                    )}
+                  </div>
+                  <div className="px-6 py-5">
+                    <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{note.notes_text}</p>
+                  </div>
+                  {note.photos && note.photos.length > 0 && (
+                    <div className="px-6 pb-5">
+                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Photos</p>
+                      <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-6 gap-3">
+                        {note.photos.map((url: string, pi: number) => (
+                           <div key={pi} className="aspect-square relative rounded-lg overflow-hidden border border-gray-100 cursor-pointer"
+                                onClick={() => setViewerState({ isOpen: true, index: pi, list: note.photos.map((u: string) => ({url: u})) })}>
+                             <NextImage src={url} alt={`Photo ${pi + 1}`} fill className="object-cover" />
+                           </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <ImageViewer
+          isOpen={viewerState.isOpen}
+          photos={viewerState.list.map((p: any) => p.url)}
+          initialIndex={viewerState.index}
+          onClose={() => setViewerState({ ...viewerState, isOpen: false })}
+          metadata={viewerState.list[viewerState.index]}
+        />
+      </div>
+    );
+  }
+
+  // ─── Survey Dashboard ───
+  if (dataType === 'survey') {
+    return (
+      <div className="h-full flex flex-col bg-gray-50 flex-1 overflow-hidden">
+        <div className="px-8 py-5 bg-white border-b border-gray-100 flex-shrink-0">
+          <h2 className="text-base font-semibold text-gray-900">Survey</h2>
+          <p className="text-xs text-gray-400 mt-0.5">
+            {format(selectedDate, 'EEEE, MMMM d yyyy')} · {surveyData.length} log{surveyData.length !== 1 ? 's' : ''}
+          </p>
+        </div>
+        <div className="flex-1 overflow-auto px-8 py-6">
+          {surveyLoading ? (
+            <div className="flex justify-center h-48 items-center"><Loader2 className="w-8 h-8 animate-spin text-[#FF6633]" /></div>
+          ) : surveyData.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-48 gap-3 text-gray-400">
+              <ClipboardList className="w-10 h-10 text-gray-200" />
+              <p className="text-sm font-medium">No survey logs for this date</p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {surveyData.map((survey, idx) => (
+                <div key={survey.id || idx} className="bg-white rounded-xl border border-gray-200 overflow-hidden hidden-shadow hover:shadow-md transition-shadow">
+                  <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                    <div className="flex items-center gap-3">
+                       <div className="w-8 h-8 rounded-full bg-[#FF6633]/10 flex items-center justify-center text-[#FF6633] font-bold text-sm">{idx + 1}</div>
+                       <div className="flex flex-col">
+                         <span className="text-sm font-semibold text-gray-900">Survey Completed</span>
+                         {survey.logged_at && <span className="text-xs text-gray-400">{format(new Date(survey.logged_at), 'h:mm a')}</span>}
+                       </div>
+                    </div>
+                  </div>
+                  {survey.questions && survey.questions.length > 0 ? (
+                    <div className="divide-y divide-gray-100">
+                      {survey.questions.map((q: any, qi: number) => (
+                        <div key={qi} className="px-6 py-4">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1">
+                              <p className="text-sm font-semibold text-gray-900 mb-1">{q.question}</p>
+                              {q.description && <p className="text-sm text-gray-500 italic mt-1">{q.description}</p>}
+                            </div>
+                            <span className={`px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider border whitespace-nowrap ${
+                              q.answer === 'Yes' ? 'bg-green-50 text-green-700 border-green-200' : 
+                              q.answer === 'No' ? 'bg-red-50 text-red-700 border-red-200' :
+                              'bg-gray-100 text-gray-600 border-gray-200'
+                            }`}>{q.answer || 'N/A'}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                     <div className="px-6 py-4 text-sm text-gray-400 italic">No questions found.</div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Observations Dashboard ───
+  if (dataType === 'observations') {
+    return (
+      <div className="h-full flex flex-col bg-gray-50 flex-1 overflow-hidden">
+        <div className="px-8 py-5 bg-white border-b border-gray-100 flex-shrink-0">
+          <h2 className="text-base font-semibold text-gray-900">Observations</h2>
+          <p className="text-xs text-gray-400 mt-0.5">
+            {format(selectedDate, 'EEEE, MMMM d yyyy')} · {observationsData.length} log{observationsData.length !== 1 ? 's' : ''}
+          </p>
+        </div>
+        <div className="flex-1 overflow-auto px-8 py-6">
+          {observationsLoading ? (
+            <div className="flex justify-center h-48 items-center"><Loader2 className="w-8 h-8 animate-spin text-[#FF6633]" /></div>
+          ) : observationsData.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-48 gap-3 text-gray-400">
+              <Eye className="w-10 h-10 text-gray-200" />
+              <p className="text-sm font-medium">No observations for this date</p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {observationsData.map((obs, idx) => (
+                <div key={obs.id || idx} className="bg-white rounded-xl border border-gray-200 overflow-hidden hidden-shadow hover:shadow-md transition-shadow">
+                  <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                    <div className="flex items-center gap-3">
+                       <div className="w-8 h-8 rounded-full bg-[#FF6633]/10 flex items-center justify-center text-[#FF6633] font-bold text-sm">{idx + 1}</div>
+                       <div className="flex flex-col">
+                         <span className="text-sm font-semibold text-gray-900">{obs.type || 'Observation'}</span>
+                         {obs.logged_at && <span className="text-xs text-gray-400">{format(new Date(obs.logged_at), 'h:mm a')}</span>}
+                       </div>
+                    </div>
+                    <div className="flex gap-2">
+                       {obs.category && (
+                         <span className={`px-2.5 py-1 rounded border text-[10px] font-bold uppercase tracking-wider ${
+                           obs.category === 'Positive' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'
+                         }`}>{obs.category}</span>
+                       )}
+                       {obs.priority && (
+                         <span className={`px-2.5 py-1 rounded border text-[10px] font-bold uppercase tracking-wider ${
+                           obs.priority === 'High' || obs.priority === 'Critical' ? 'bg-orange-50 text-orange-700 border-orange-200' : 'bg-blue-50 text-blue-700 border-blue-200'
+                         }`}>{obs.priority}</span>
+                       )}
+                       {obs.status && (
+                         <span className="px-2.5 py-1 rounded border border-gray-200 bg-gray-100 text-gray-600 text-[10px] font-bold uppercase tracking-wider">
+                           {obs.status}
+                         </span>
+                       )}
+                    </div>
+                  </div>
+                  <div className="px-6 py-5 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1.5">Description</p>
+                      <p className="text-sm text-gray-800 whitespace-pre-wrap">{obs.description || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1.5">Location</p>
+                      <p className="text-sm text-gray-800 mb-4">{obs.location || '—'}</p>
+                      
+                      {obs.assignees && obs.assignees.length > 0 && (
+                        <div>
+                          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1.5">Assignees</p>
+                          <div className="flex flex-wrap gap-2">
+                            {obs.assignees.map((a: any, i: number) => (
+                              <span key={i} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md border border-gray-200">
+                                {a.name} <span className="text-gray-400 ml-1">({a.company || 'Unknown'})</span>
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {obs.resolution_photos && obs.resolution_photos.length > 0 && (
+                    <div className="px-6 pb-5">
+                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-3">Resolution Photos</p>
+                      <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-6 gap-3">
+                        {obs.resolution_photos.map((url: string, pi: number) => (
+                           <div key={pi} className="aspect-square relative rounded-lg overflow-hidden border border-gray-100 cursor-pointer"
+                                onClick={() => setViewerState({ isOpen: true, index: pi, list: obs.resolution_photos.map((u: string) => ({url: u})) })}>
+                             <NextImage src={url} alt={`Photo ${pi + 1}`} fill className="object-cover" />
+                           </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <ImageViewer
+          isOpen={viewerState.isOpen}
+          photos={viewerState.list.map((p: any) => p.url)}
+          initialIndex={viewerState.index}
+          onClose={() => setViewerState({ ...viewerState, isOpen: false })}
+          metadata={viewerState.list[viewerState.index]}
+        />
+      </div>
+    );
+  }
+
+  // ─── Incidents Dashboard ───
+  if (dataType === 'incidents') {
+    return (
+      <div className="h-full flex flex-col bg-gray-50 flex-1 overflow-hidden">
+        <div className="px-8 py-5 bg-white border-b border-gray-100 flex-shrink-0">
+          <h2 className="text-base font-semibold text-gray-900">Incidents</h2>
+          <p className="text-xs text-gray-400 mt-0.5">
+            {format(selectedDate, 'EEEE, MMMM d yyyy')} · {incidentsData.length} log{incidentsData.length !== 1 ? 's' : ''}
+          </p>
+        </div>
+        <div className="flex-1 overflow-auto px-8 py-6">
+          {incidentsLoading ? (
+            <div className="flex justify-center h-48 items-center"><Loader2 className="w-8 h-8 animate-spin text-[#FF6633]" /></div>
+          ) : incidentsData.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-48 gap-3 text-gray-400">
+              <AlertTriangle className="w-10 h-10 text-gray-200" />
+              <p className="text-sm font-medium">No incidents reported for this date</p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {incidentsData.map((inc, idx) => (
+                <div key={inc.id || idx} className="bg-white rounded-xl border border-red-200 overflow-hidden shadow-sm">
+                  <div className="px-6 py-4 border-b border-red-100 flex justify-between items-center bg-red-50/50">
+                    <div className="flex items-center gap-3">
+                       <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-600 font-bold text-sm"><AlertTriangle className="w-4 h-4" /></div>
+                       <div className="flex flex-col">
+                         <span className="text-sm font-bold text-gray-900">{inc.title || 'Incident Report'}</span>
+                         {inc.logged_at && <span className="text-xs text-gray-500">{format(new Date(inc.logged_at), 'h:mm a')}</span>}
+                       </div>
+                    </div>
+                    <div className="flex gap-2">
+                       {inc.recordable !== undefined && (
+                         <span className={`px-2.5 py-1 rounded font-bold text-[10px] uppercase tracking-wider ${
+                           inc.recordable ? 'bg-red-100 text-red-700 border border-red-200' : 'bg-gray-100 text-gray-600 border border-gray-200'
+                         }`}>{inc.recordable ? 'Recordable' : 'Non-Recordable'}</span>
+                       )}
+                       {inc.status && (
+                         <span className={`px-2.5 py-1 rounded border text-[10px] font-bold uppercase tracking-wider ${
+                           inc.status === 'Open' ? 'bg-orange-50 text-orange-700 border-orange-200' : 'bg-gray-100 text-gray-600 border-gray-200'
+                         }`}>{inc.status}</span>
+                       )}
+                    </div>
+                  </div>
+                  <div className="px-6 py-5 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                    <div>
+                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1.5">Description & Location</p>
+                      <p className="text-sm text-gray-800 mb-2 whitespace-pre-wrap">{inc.description || '—'}</p>
+                      <p className="text-xs text-gray-500 flex items-center gap-1.5 font-medium"><MapPin className="w-3.5 h-3.5" />{inc.location || 'Unknown location'}</p>
+                    </div>
+                    {(inc.injury_illness_type || (inc.injured_employee_info && inc.injured_employee_info.length > 0)) && (
+                      <div>
+                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1.5">Affected individuals</p>
+                        {inc.injury_illness_type && (
+                          <p className="text-xs font-semibold text-red-600 mb-2 px-2 py-1 bg-red-50 inline-block border border-red-100 rounded">{inc.injury_illness_type}</p>
+                        )}
+                        {inc.injured_employee_info && inc.injured_employee_info.length > 0 && (
+                          <ul className="text-sm text-gray-800 list-disc list-inside space-y-1">
+                            {inc.injured_employee_info.map((emp: string, i: number) => <li key={i}>{emp}</li>)}
+                          </ul>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  {inc.photos && inc.photos.length > 0 && (
+                    <div className="px-6 pb-5 border-t border-red-50 pt-4">
+                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-3">Incident Photos</p>
+                      <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-6 gap-3">
+                        {inc.photos.map((url: string, pi: number) => (
+                           <div key={pi} className="aspect-square relative rounded-lg overflow-hidden border border-gray-200 cursor-pointer"
+                                onClick={() => setViewerState({ isOpen: true, index: pi, list: inc.photos.map((u: string) => ({url: u})) })}>
+                             <NextImage src={url} alt={`Photo ${pi + 1}`} fill className="object-cover" />
+                           </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <ImageViewer
+          isOpen={viewerState.isOpen}
+          photos={viewerState.list.map((p: any) => p.url)}
+          initialIndex={viewerState.index}
+          onClose={() => setViewerState({ ...viewerState, isOpen: false })}
+          metadata={viewerState.list[viewerState.index]}
+        />
       </div>
     );
   }

@@ -2,9 +2,10 @@ import { NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
 
 export async function GET() {
-  const [activitiesRes, attachmentsRes, projectsRes] = await Promise.all([
+  const [activitiesRes, attachmentsRes, surveysRes, projectsRes] = await Promise.all([
     supabaseServer.from('activities').select('*'),
     supabaseServer.from('attachments').select('*'),
+    supabaseServer.from('surveys').select('*, questions:survey_questions(question, answer)'),
     supabaseServer.from('projects').select('id, name')
   ]);
 
@@ -49,8 +50,34 @@ export async function GET() {
     };
   });
 
-  // 3. Merge and sort by time
-  const combined = [...activitiesData, ...attachmentsData].sort((a, b) => 
+  const surveysData = (surveysRes.data || []).map((s) => {
+    const loggedAt = s.logged_at ? new Date(s.logged_at) : new Date();
+    const metricsFromQuestions = (s.questions || []).map((q: any) => ({
+        label: q.question,
+        value: q.answer || 'N/A'
+    }));
+
+    const yesCount = (s.questions || []).filter((q:any) => q.answer === 'Yes').length;
+    const noCount = (s.questions || []).filter((q:any) => q.answer === 'No').length;
+
+    return {
+        id: s.id,
+        employeeName: 'Artifact Employee', // Fallback
+        action: 'submitted a survey in',
+        project: projectsMap[String(s.project_id)] || 'Unknown Project',
+        activityType: 'Survey',
+        timestamp: `${loggedAt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} | ${loggedAt.toISOString().split('T')[0]}`,
+        isoTimestamp: s.logged_at || new Date().toISOString(),
+        metrics: [
+             { label: 'NOTE: Summary', value: `${s.questions?.length || 0} questions answered (${yesCount} Yes, ${noCount} No).` },
+             ...metricsFromQuestions
+        ],
+        photos: []
+    };
+  });
+
+  // 4. Merge and sort by time
+  const combined = [...activitiesData, ...attachmentsData, ...surveysData].sort((a, b) => 
     new Date(b.isoTimestamp).getTime() - new Date(a.isoTimestamp).getTime()
   );
 

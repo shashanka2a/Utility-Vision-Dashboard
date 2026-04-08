@@ -125,7 +125,7 @@ function RoleDropdown({
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export function DirectoryScreen() {
+export function DirectoryScreen({ projectFilter }: { projectFilter?: string }) {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [projectNames, setProjectNames] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -152,7 +152,12 @@ export function DirectoryScreen() {
         fetch('/api/projects'),
       ]);
       if (!empRes.ok || !projRes.ok) throw new Error('Failed to load data');
-      const [empData, projData] = await Promise.all([empRes.json(), projRes.json()]);
+      let [empData, projData] = await Promise.all([empRes.json(), projRes.json()]);
+      
+      if (projectFilter && projectFilter !== 'All Projects') {
+         empData = empData.filter((e: any) => e.assigned_projects?.includes(projectFilter));
+      }
+      
       setEmployees(empData);
       setProjectNames(projData.map((p: { name: string }) => p.name));
     } catch (e: unknown) {
