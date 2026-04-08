@@ -148,6 +148,65 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
   const setF = (field: string, value: string) =>
     setSettingsForm((prev: any) => ({ ...prev, [field]: value }));
 
+  // ── Metrics state ──
+  const [metricsData, setMetricsData] = useState<any[]>([]);
+  const [metricsLoading, setMetricsLoading] = useState(false);
+
+  useEffect(() => {
+    if (dataType !== 'metrics') return;
+    setMetricsLoading(true);
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
+    const params = new URLSearchParams({ date: dateStr });
+    if (selectedProject && selectedProject !== 'All Projects') params.set('project', selectedProject);
+    fetch(`/api/metrics?${params.toString()}`)
+      .then(r => r.json())
+      .then(d => setMetricsData(Array.isArray(d) ? d : []))
+      .catch(() => setMetricsData([]))
+      .finally(() => setMetricsLoading(false));
+  }, [dataType, selectedProject, selectedDate]);
+
+  // ── Chemicals state ──
+  const [chemicalsData, setChemicalsData] = useState<any[]>([]);
+  const [chemicalsLoading, setChemicalsLoading] = useState(false);
+
+  useEffect(() => {
+    if (dataType !== 'chemicals') return;
+    setChemicalsLoading(true);
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
+    const params = new URLSearchParams({ date: dateStr });
+    if (selectedProject && selectedProject !== 'All Projects') params.set('project', selectedProject);
+    fetch(`/api/chemicals?${params.toString()}`)
+      .then(r => r.json())
+      .then(d => setChemicalsData(Array.isArray(d) ? d : []))
+      .catch(() => setChemicalsData([]))
+      .finally(() => setChemicalsLoading(false));
+  }, [dataType, selectedProject, selectedDate]);
+
+  // helper: fetch any dedicated endpoint by dataType key
+  function useDedicatedFetch(type: string, endpoint: string) {
+    const [fetchData, setFetchData] = useState<any[]>([]);
+    const [fetchLoading, setFetchLoading] = useState(false);
+    useEffect(() => {
+      if (dataType !== type) return;
+      setFetchLoading(true);
+      const dateStr = format(selectedDate, 'yyyy-MM-dd');
+      const params = new URLSearchParams({ date: dateStr });
+      if (selectedProject && selectedProject !== 'All Projects') params.set('project', selectedProject);
+      fetch(`${endpoint}?${params.toString()}`)
+        .then(r => r.json())
+        .then(d => setFetchData(Array.isArray(d) ? d : []))
+        .catch(() => setFetchData([]))
+        .finally(() => setFetchLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [dataType, selectedProject, selectedDate]);
+    return { fetchData, fetchLoading };
+  }
+
+  const { fetchData: notesData,        fetchLoading: notesLoading }        = useDedicatedFetch('notes',        '/api/notes');
+  const { fetchData: surveyData,        fetchLoading: surveyLoading }        = useDedicatedFetch('survey',       '/api/survey');
+  const { fetchData: observationsData,  fetchLoading: observationsLoading }  = useDedicatedFetch('observations', '/api/observations');
+  const { fetchData: incidentsData,     fetchLoading: incidentsLoading }     = useDedicatedFetch('incidents',    '/api/incidents');
+
   useEffect(() => {
     fetch('/api/projects').then(res => res.json()).then(p => {
       setProjectsList(["All Projects", ...p.map((x: any) => x.name)]);
@@ -258,6 +317,245 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
 
     return { chartData, trendData };
   }, [data, dataType]);
+
+  // ─── Metrics Dashboard ───
+  if (dataType === 'metrics') {
+    const statFields = [
+      { key: 'water_usage',            label: 'Water Usage',            unit: 'gal',  icon: '💧', color: 'text-blue-600',  bg: 'bg-blue-50',  border: 'border-blue-100' },
+      { key: 'acres_completed',        label: 'Acres Completed',        unit: 'ac',   icon: '🌿', color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-100' },
+      { key: 'green_space_completed',  label: 'Green Space Completed',  unit: 'sqft', icon: '🏞', color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100' },
+      { key: 'number_of_operators',    label: 'Operators',              unit: '',     icon: '👷', color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-100' },
+    ];
+
+    return (
+      <div className="h-full flex flex-col bg-gray-50 flex-1 overflow-hidden">
+        {/* Header */}
+        <div className="px-8 py-5 bg-white border-b border-gray-100 flex-shrink-0 flex items-center justify-between">
+          <div>
+            <h2 className="text-base font-semibold text-gray-900">Metrics</h2>
+            <p className="text-xs text-gray-400 mt-0.5">
+              {format(selectedDate, 'EEEE, MMMM d yyyy')} · {metricsData.length} log{metricsData.length !== 1 ? 's' : ''}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-auto px-8 py-6">
+          {metricsLoading ? (
+            <div className="flex items-center justify-center h-48">
+              <Loader2 className="w-8 h-8 animate-spin text-[#FF6633]" />
+            </div>
+          ) : metricsData.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-48 gap-3 text-gray-400">
+              <BarChartIcon className="w-10 h-10 text-gray-200" />
+              <p className="text-sm font-medium">No metrics logged for this date</p>
+              <p className="text-xs text-gray-400">Metrics are recorded from the mobile field app</p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {metricsData.map((entry: any, idx: number) => {
+                const loggedAt = entry.logged_at ? new Date(entry.logged_at) : null;
+                const photos: string[] = Array.isArray(entry.photos) ? entry.photos : [];
+                return (
+                  <div key={entry.id || idx} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                    {/* Entry header */}
+                    <div className="px-6 py-4 border-b border-gray-50 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-[#FF6633]/10 flex items-center justify-center text-[#FF6633] font-bold text-sm">
+                          {idx + 1}
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900">Metric Log #{idx + 1}</p>
+                          {loggedAt && (
+                            <p className="text-xs text-gray-400">
+                              {format(loggedAt, 'h:mm a · MMM d, yyyy')}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Stat cards */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-gray-100">
+                      {statFields.map(({ key, label, unit, icon, color, bg, border }) => {
+                        const val = entry[key];
+                        const hasVal = val !== null && val !== undefined && val !== '';
+                        return (
+                          <div key={key} className={`${bg} p-5 flex flex-col gap-1`}>
+                            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide flex items-center gap-1.5">
+                              <span>{icon}</span>{label}
+                            </p>
+                            <p className={`text-3xl font-bold ${hasVal ? color : 'text-gray-300'}`}>
+                              {hasVal ? val : '—'}
+                            </p>
+                            {hasVal && unit && (
+                              <p className="text-xs font-medium text-gray-400">{unit}</p>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Notes */}
+                    {entry.notes && (
+                      <div className="px-6 py-4 border-t border-gray-50">
+                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Notes</p>
+                        <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{entry.notes}</p>
+                      </div>
+                    )}
+
+                    {/* Photos */}
+                    {photos.length > 0 && (
+                      <div className="px-6 py-4 border-t border-gray-50">
+                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Photos ({photos.length})</p>
+                        <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-6 gap-3">
+                          {photos.map((url: string, pi: number) => (
+                            <div
+                              key={pi}
+                              className="aspect-square relative rounded-lg overflow-hidden border border-gray-100 cursor-pointer hover:opacity-90 transition-opacity"
+                              onClick={() => setViewerState({ isOpen: true, index: pi, list: photos.map((u: string) => ({ url: u, fileName: u.split('/').pop() })) })}
+                            >
+                              <NextImage src={url} alt={`Photo ${pi + 1}`} fill className="object-cover" />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <ImageViewer
+          isOpen={viewerState.isOpen}
+          photos={viewerState.list.map((p: any) => p.url)}
+          initialIndex={viewerState.index}
+          onClose={() => setViewerState({ ...viewerState, isOpen: false })}
+          metadata={viewerState.list[viewerState.index]}
+        />
+      </div>
+    );
+  }
+
+  // ─── Chemicals Dashboard ───
+  if (dataType === 'chemicals') {
+    return (
+      <div className="h-full flex flex-col bg-gray-50 flex-1 overflow-hidden">
+        {/* Header */}
+        <div className="px-8 py-5 bg-white border-b border-gray-100 flex-shrink-0">
+          <h2 className="text-base font-semibold text-gray-900">Chemicals</h2>
+          <p className="text-xs text-gray-400 mt-0.5">
+            {format(selectedDate, 'EEEE, MMMM d yyyy')} · {chemicalsData.length} log{chemicalsData.length !== 1 ? 's' : ''}
+          </p>
+        </div>
+
+        <div className="flex-1 overflow-auto px-8 py-6">
+          {chemicalsLoading ? (
+            <div className="flex items-center justify-center h-48">
+              <Loader2 className="w-8 h-8 animate-spin text-[#FF6633]" />
+            </div>
+          ) : chemicalsData.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-48 gap-3 text-gray-400">
+              <FileSpreadsheet className="w-10 h-10 text-gray-200" />
+              <p className="text-sm font-medium">No chemical logs for this date</p>
+              <p className="text-xs text-gray-400">Chemical logs are recorded from the mobile field app</p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {chemicalsData.map((entry: any, idx: number) => {
+                const loggedAt = entry.logged_at ? new Date(entry.logged_at) : null;
+                const chemicals: { name: string; quantity: number; unit: string }[] =
+                  Array.isArray(entry.chemicals) ? entry.chemicals : [];
+                const photos: string[] = Array.isArray(entry.photos) ? entry.photos : [];
+
+                return (
+                  <div key={entry.id || idx} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                    {/* Entry header */}
+                    <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-[#FF6633]/10 flex items-center justify-center text-[#FF6633] font-bold text-sm">{idx + 1}</div>
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900">Chemical Log #{idx + 1}</p>
+                          {loggedAt && <p className="text-xs text-gray-400">{format(loggedAt, 'h:mm a · MMM d, yyyy')}</p>}
+                        </div>
+                      </div>
+                      {/* Application method badge */}
+                      {entry.application_type && (
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${
+                          entry.application_type === 'Spraying'
+                            ? 'bg-blue-50 text-blue-600 border border-blue-100'
+                            : 'bg-amber-50 text-amber-600 border border-amber-100'
+                        }`}>
+                          <span>{entry.application_type === 'Spraying' ? '💧' : '🖊'}</span>
+                          {entry.application_type}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Chemical items table */}
+                    {chemicals.length > 0 ? (
+                      <div className="divide-y divide-gray-50">
+                        {/* Table header */}
+                        <div className="grid grid-cols-[1fr_auto_auto] gap-4 px-6 py-2.5 bg-gray-50 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                          <span>Chemical</span>
+                          <span className="text-right w-20">Amount</span>
+                          <span className="w-16 text-right">Unit</span>
+                        </div>
+                        {chemicals.map((chem, ci) => (
+                          <div key={ci} className="grid grid-cols-[1fr_auto_auto] gap-4 px-6 py-3.5 items-center hover:bg-gray-50/50 transition-colors">
+                            <span className="text-sm font-medium text-gray-900">{chem.name}</span>
+                            <span className="text-sm font-bold text-gray-800 w-20 text-right tabular-nums">{chem.quantity}</span>
+                            <span className="text-xs font-semibold text-gray-400 w-16 text-right uppercase">{chem.unit}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="px-6 py-4 text-sm text-gray-400 italic">No chemical items recorded</div>
+                    )}
+
+                    {/* Notes */}
+                    {entry.notes && (
+                      <div className="px-6 py-4 border-t border-gray-100">
+                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Notes</p>
+                        <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{entry.notes}</p>
+                      </div>
+                    )}
+
+                    {/* Photos */}
+                    {photos.length > 0 && (
+                      <div className="px-6 py-4 border-t border-gray-100">
+                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Photos ({photos.length})</p>
+                        <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-6 gap-3">
+                          {photos.map((url: string, pi: number) => (
+                            <div
+                              key={pi}
+                              className="aspect-square relative rounded-lg overflow-hidden border border-gray-100 cursor-pointer hover:opacity-90 transition-opacity"
+                              onClick={() => setViewerState({ isOpen: true, index: pi, list: photos.map((u: string) => ({ url: u, fileName: u.split('/').pop() })) })}
+                            >
+                              <NextImage src={url} alt={`Photo ${pi + 1}`} fill className="object-cover" />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <ImageViewer
+          isOpen={viewerState.isOpen}
+          photos={viewerState.list.map((p: any) => p.url)}
+          initialIndex={viewerState.index}
+          onClose={() => setViewerState({ ...viewerState, isOpen: false })}
+          metadata={viewerState.list[viewerState.index]}
+        />
+      </div>
+    );
+  }
 
   // ─── Settings (Inline Project Edit) ───
   if (dataType === 'settings') {
