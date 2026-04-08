@@ -1037,4 +1037,3 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
     </div>
   );
 }
-}
