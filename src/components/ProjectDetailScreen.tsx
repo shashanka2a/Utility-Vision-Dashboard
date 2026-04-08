@@ -8,7 +8,7 @@ import {
   Plus, MoreHorizontal, ArrowUpDown, Calendar,
   Clock, User, TrendingUp, BarChart as BarChartIcon,
   CheckCircle2, AlertTriangle, Info, Briefcase, ChevronDown, ChevronRight,
-  Maximize2, Share2, Star
+  Maximize2, Share2, Star, Save, MapPin, Building2, Hash, Pencil, Trash2
 } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { format, subDays, eachDayOfInterval, startOfWeek, endOfWeek } from "date-fns";
@@ -46,6 +46,107 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
   });
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
   const [filterType, setFilterType] = useState<'all' | 'photos' | 'documents'>('all');
+
+  // ── Settings / project-edit state ──
+  const [settingsProject, setSettingsProject] = useState<any>(null);
+  const [settingsLoading, setSettingsLoading] = useState(false);
+  const [settingsSaving, setSettingsSaving] = useState(false);
+  const [settingsError, setSettingsError] = useState<string | null>(null);
+  const [settingsSuccess, setSettingsSuccess] = useState(false);
+  const [settingsForm, setSettingsForm] = useState<any>(null);
+  const [settingsAddressQuery, setSettingsAddressQuery] = useState('');
+  const [settingsAddressResults, setSettingsAddressResults] = useState<any[]>([]);
+  const [settingsSearching, setSettingsSearching] = useState(false);
+
+  // Fetch project record when showing settings
+  useEffect(() => {
+    if (dataType !== 'settings' || !selectedProject || selectedProject === 'All Projects') return;
+    setSettingsLoading(true);
+    setSettingsError(null);
+    setSettingsSuccess(false);
+    fetch('/api/projects')
+      .then(r => r.json())
+      .then((projects: any[]) => {
+        const found = projects.find((p: any) => p.name === selectedProject);
+        if (found) {
+          setSettingsProject(found);
+          setSettingsForm({
+            name: found.name || '',
+            job_number: found.job_number || '',
+            client_name: found.client_name || '',
+            street_address: found.street_address || '',
+            city: found.city || '',
+            state: found.state || '',
+            zip_code: found.zip_code || '',
+            country: found.country || 'United States',
+            start_date: found.start_date || '',
+            end_date: found.end_date || '',
+            project_template: found.project_template || 'Wicking Jobs Template | Company default template',
+            status: found.status || 'active',
+          });
+        } else {
+          setSettingsError('Could not find project details.');
+        }
+      })
+      .catch(() => setSettingsError('Failed to load project.'))
+      .finally(() => setSettingsLoading(false));
+  }, [dataType, selectedProject]);
+
+  // Address autocomplete for settings form
+  useEffect(() => {
+    if (!settingsAddressQuery || settingsAddressQuery.length < 3) { setSettingsAddressResults([]); return; }
+    const timer = setTimeout(async () => {
+      setSettingsSearching(true);
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(settingsAddressQuery)}&format=json&addressdetails=1&countrycodes=us,ca`);
+        if (res.ok) setSettingsAddressResults(await res.json());
+      } catch {} finally { setSettingsSearching(false); }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [settingsAddressQuery]);
+
+  const settingsSelectAddress = (result: any) => {
+    const p = result.address;
+    const street = [p.house_number, p.road].filter(Boolean).join(' ') || p.hamlet || p.suburb || '';
+    setSettingsForm((prev: any) => ({
+      ...prev,
+      street_address: street,
+      city: p.city || p.town || p.village || '',
+      state: p.state || '',
+      zip_code: p.postcode || '',
+      country: p.country || 'United States',
+    }));
+    setSettingsAddressQuery('');
+    setSettingsAddressResults([]);
+  };
+
+  const handleSettingsSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!settingsProject) return;
+    setSettingsSaving(true);
+    setSettingsError(null);
+    setSettingsSuccess(false);
+    try {
+      const res = await fetch(`/api/projects/${settingsProject.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settingsForm),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Update failed');
+      }
+      setSettingsSuccess(true);
+      setTimeout(() => setSettingsSuccess(false), 3000);
+    } catch (e: unknown) {
+      setSettingsError(e instanceof Error ? e.message : 'Save failed');
+    } finally {
+      setSettingsSaving(false);
+    }
+  };
+
+  const setF = (field: string, value: string) =>
+    setSettingsForm((prev: any) => ({ ...prev, [field]: value }));
 
   useEffect(() => {
     fetch('/api/projects').then(res => res.json()).then(p => {
@@ -158,44 +259,222 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
     return { chartData, trendData };
   }, [data, dataType]);
 
-  // Handle Gallery Rendering (Timeline Style)
-  if (dataType === 'gallery') {
-    const allPhotos = data.flatMap(item => 
-      (item.photos || []).map((url: string) => ({
-        url,
-        uploadedBy: item.employeeName,
-        date: item.timestamp,
-        isoDate: item.isoTimestamp?.split('T')[0] || item.timestamp.split(' at ')[0],
-        project: item.project,
-        description: item.metrics?.find((m: any) => m.label?.toLowerCase().includes('note') || m.label?.toLowerCase().includes('desc'))?.value || 'Uploaded in ' + item.activityType,
-        fileName: url.split('/').pop(),
-        activityType: item.activityType
-      }))
+  // ─── Settings (Inline Project Edit) ───
+  if (dataType === 'settings') {
+    if (selectedProject === 'All Projects') {
+      return (
+        <div className="h-full flex items-center justify-center flex-col gap-3 text-gray-400">
+          <Briefcase className="w-10 h-10 text-gray-200" />
+          <p className="text-sm font-medium">Select a specific project to edit its settings.</p>
+        </div>
+      );
+    }
+
+    if (settingsLoading) {
+      return (
+        <div className="h-full flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-[#FF6633]" />
+        </div>
+      );
+    }
+
+    if (!settingsForm) {
+      return (
+        <div className="h-full flex items-center justify-center text-gray-400 text-sm">
+          {settingsError || 'No project data found.'}
+        </div>
+      );
+    }
+
+    const PROJECT_TEMPLATES = [
+      'Wicking Jobs Template | Company default template',
+      'Infrastructure Template',
+      'Environmental Project Template',
+      'General Construction Template',
+    ];
+
+    return (
+      <div className="h-full flex flex-col bg-gray-50 flex-1 overflow-hidden">
+        {/* Header */}
+        <div className="px-8 py-6 bg-white border-b border-gray-100 flex items-center justify-between flex-shrink-0">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Project Settings</h2>
+            <p className="text-sm text-gray-500 mt-0.5">{settingsProject?.name}</p>
+          </div>
+          <div className="flex items-center gap-3">
+            {settingsSuccess && (
+              <span className="text-sm font-medium text-green-600 flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4" /> Saved successfully
+              </span>
+            )}
+            <button
+              form="settings-form"
+              type="submit"
+              disabled={settingsSaving}
+              className="flex items-center gap-2 px-5 py-2 bg-[#FF6633] text-white rounded-lg text-sm font-medium hover:bg-[#E55A2B] transition-all shadow-sm disabled:opacity-60"
+            >
+              {settingsSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              Save changes
+            </button>
+          </div>
+        </div>
+
+        {/* Form body */}
+        <div className="flex-1 overflow-auto">
+          <form id="settings-form" onSubmit={handleSettingsSave}>
+            <div className="max-w-3xl mx-auto px-8 py-8 space-y-8">
+              {settingsError && (
+                <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                  {settingsError}
+                </div>
+              )}
+
+              {/* Section: Basic Info */}
+              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-100">
+                  <h3 className="text-sm font-semibold text-gray-900">Basic Information</h3>
+                </div>
+                <div className="px-6 py-5 space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Project Name</label>
+                      <input type="text" required value={settingsForm.name} onChange={e => setF('name', e.target.value)} placeholder="Project name"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6633]/20 focus:border-[#FF6633] transition-all" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Job #</label>
+                      <input type="text" required value={settingsForm.job_number} onChange={e => setF('job_number', e.target.value)} placeholder="Job number"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6633]/20 focus:border-[#FF6633] transition-all" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Client Name</label>
+                      <input type="text" value={settingsForm.client_name} onChange={e => setF('client_name', e.target.value)} placeholder="Client name"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6633]/20 focus:border-[#FF6633] transition-all" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Status</label>
+                      <select value={settingsForm.status} onChange={e => setF('status', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6633]/20 focus:border-[#FF6633] transition-all text-gray-700">
+                        <option value="active">Active</option>
+                        <option value="paused">Paused</option>
+                        <option value="completed">Completed</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Start Date</label>
+                      <input type="date" value={settingsForm.start_date} onChange={e => setF('start_date', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6633]/20 focus:border-[#FF6633] transition-all text-gray-700" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">End Date</label>
+                      <input type="date" value={settingsForm.end_date} onChange={e => setF('end_date', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6633]/20 focus:border-[#FF6633] transition-all text-gray-700" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Project Template</label>
+                    <select value={settingsForm.project_template} onChange={e => setF('project_template', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6633]/20 focus:border-[#FF6633] transition-all text-gray-700">
+                      {PROJECT_TEMPLATES.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section: Location */}
+              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-100">
+                  <h3 className="text-sm font-semibold text-gray-900">Location</h3>
+                </div>
+                <div className="px-6 py-5 space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Search Address</label>
+                    <div className="relative">
+                      <input type="text" value={settingsAddressQuery} onChange={e => setSettingsAddressQuery(e.target.value)} placeholder="Search for an address"
+                        className="w-full pl-3 pr-9 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6633]/20 focus:border-[#FF6633] transition-all" />
+                      {settingsSearching
+                        ? <Loader2 className="w-4 h-4 text-[#FF6633] animate-spin absolute right-3 top-1/2 -translate-y-1/2" />
+                        : <Search className="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2" />}
+                      {settingsAddressResults.length > 0 && (
+                        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden divide-y divide-gray-50 max-h-48 overflow-y-auto">
+                          {settingsAddressResults.map((r: any, i: number) => (
+                            <button key={i} type="button" onClick={() => settingsSelectAddress(r)}
+                              className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                              {r.display_name}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Street Address</label>
+                    <input type="text" value={settingsForm.street_address} onChange={e => setF('street_address', e.target.value)} placeholder="Street address"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6633]/20 focus:border-[#FF6633] transition-all" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">City</label>
+                      <input type="text" value={settingsForm.city} onChange={e => setF('city', e.target.value)} placeholder="City"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6633]/20 focus:border-[#FF6633] transition-all" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">State</label>
+                      <input type="text" value={settingsForm.state} onChange={e => setF('state', e.target.value)} placeholder="State"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6633]/20 focus:border-[#FF6633] transition-all" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Zip Code</label>
+                      <input type="text" value={settingsForm.zip_code} onChange={e => setF('zip_code', e.target.value)} placeholder="Zip"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6633]/20 focus:border-[#FF6633] transition-all" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Country</label>
+                      <input type="text" value={settingsForm.country} onChange={e => setF('country', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6633]/20 focus:border-[#FF6633] transition-all" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Danger zone */}
+              <div className="bg-white rounded-xl border border-red-100 overflow-hidden">
+                <div className="px-6 py-4 border-b border-red-100">
+                  <h3 className="text-sm font-semibold text-red-700">Danger Zone</h3>
+                </div>
+                <div className="px-6 py-5 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Delete this project</p>
+                    <p className="text-xs text-gray-500 mt-0.5">This action cannot be undone. All associated data will be permanently removed.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (confirm(`Are you sure you want to delete "${settingsProject?.name}"? This cannot be undone.`)) {
+                        fetch(`/api/projects/${settingsProject?.id}`, { method: 'DELETE' })
+                          .then(() => window.location.href = '/projects')
+                          .catch(() => alert('Delete failed'));
+                      }
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 border border-red-300 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Delete project
+                  </button>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
     );
-
-    // Apply Filters and Search
-    const filteredPhotos = allPhotos.filter(p => {
-      const matchesSearch = 
-        p.fileName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.uploadedBy?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.project?.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      return matchesSearch;
-    });
-
-    // Sort
-    const sortedPhotos = [...filteredPhotos].sort((a, b) => {
-      if (sortOrder === 'newest') return b.isoDate.localeCompare(a.isoDate);
-      return a.isoDate.localeCompare(b.isoDate);
-    });
-
-    const groups: { [key: string]: any[] } = {};
-    sortedPhotos.forEach(p => {
-      const d = p.isoDate;
-      if (!groups[d]) groups[d] = [];
-      groups[d].push(p);
-    });
+  }
 
   // Handle Gallery Rendering (Simplified Reference Style)
   if (dataType === 'gallery') {
