@@ -366,7 +366,8 @@ export function DirectoryScreen() {
           </div>
         ) : (
           viewMode === 'list' ? (
-            <div className="bg-white border border-gray-300 rounded-lg overflow-hidden shadow-sm">
+            <div className="overflow-x-auto">
+            <div className="bg-white border border-gray-300 rounded-lg overflow-hidden shadow-sm min-w-[700px]">
               <table className="w-full">
                 <thead className="bg-gray-100 border-b border-gray-300">
                   <tr>
@@ -429,6 +430,13 @@ export function DirectoryScreen() {
                           {menuOpenId === emp.id && (
                             <div className="absolute right-0 top-8 z-30 bg-white border border-gray-200 rounded-lg shadow-xl min-w-[160px] py-1 overflow-hidden">
                               <button
+                                onClick={() => { setMenuOpenId(null); openEdit(emp); }}
+                                className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors font-medium"
+                              >
+                                Edit
+                              </button>
+                              <div className="border-t border-gray-100 my-1" />
+                              <button
                                 onClick={() => handleToggleStatus(emp)}
                                 className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                               >
@@ -450,6 +458,7 @@ export function DirectoryScreen() {
                 </tbody>
               </table>
             </div>
+            </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 content-start">
               {filteredEmployees.map(emp => (
@@ -469,6 +478,13 @@ export function DirectoryScreen() {
                         </button>
                         {menuOpenId === emp.id && (
                           <div className="absolute right-0 top-7 z-30 bg-white border border-gray-200 rounded-lg shadow-xl min-w-[150px] py-1 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                            <button
+                              onClick={() => { setMenuOpenId(null); openEdit(emp); }}
+                              className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 font-medium"
+                            >
+                              Edit
+                            </button>
+                            <div className="border-t border-gray-100 my-1" />
                             <button
                               onClick={() => handleToggleStatus(emp)}
                               className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
