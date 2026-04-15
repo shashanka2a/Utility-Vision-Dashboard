@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
+import cloudinary from '@/lib/cloudinary';
 
 // GET /api/safety-talks — list all safety talk templates
 export async function GET() {
@@ -37,7 +38,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json(data, { status: 201 });
 }
 
-// DELETE /api/safety-talks?id=<uuid>
+// DELETE /api/safety-talks?id=<uuid> — removes DB row and deletes the PDF from Cloudinary when possible
 export async function DELETE(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const id = searchParams.get('id');
@@ -46,10 +47,32 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: 'ID is required' }, { status: 400 });
   }
 
-  const { error } = await supabaseServer
+  const { data: row, error: fetchErr } = await supabaseServer
     .from('safety_talk_templates')
-    .delete()
-    .eq('id', id);
+    .select('pdf_public_id')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (fetchErr) {
+    return NextResponse.json({ error: fetchErr.message }, { status: 500 });
+  }
+
+  const publicId = row && typeof row === 'object' && 'pdf_public_id' in row ? (row as { pdf_public_id: string | null }).pdf_public_id : null;
+
+  if (publicId && typeof publicId === 'string' && publicId.length > 0) {
+    try {
+      await new Promise<void>((resolve, reject) => {
+        cloudinary.uploader.destroy(publicId, { resource_type: 'raw', invalidate: true }, (err) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+    } catch (e) {
+      console.warn('[safety-talks DELETE] Cloudinary destroy failed:', e);
+    }
+  }
+
+  const { error } = await supabaseServer.from('safety_talk_templates').delete().eq('id', id);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

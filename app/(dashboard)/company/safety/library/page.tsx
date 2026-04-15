@@ -224,7 +224,10 @@ export default function SafetyLibraryPage() {
 
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Library</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Library</h1>
+          <p className="text-xs text-gray-500 mt-1">PDFs are stored in Cloudinary (folder <code className="bg-gray-100 px-1 rounded">safety-talks</code>).</p>
+        </div>
         <div className="flex items-center gap-3">
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />

@@ -5,7 +5,7 @@ import {
   BarChart3, FileText, TrendingUp, Calendar, LayoutDashboard,
   Briefcase, ChevronDown, Users, Image, Settings,
   Shield, Info, ClipboardList, ChevronRight,
-  FolderOpen,   CloudRain, BookOpen, Clock3, CalendarCheck, Sun, Cloud,
+  FolderOpen,   CloudRain, BookOpen, Clock3, CalendarCheck, Sun, Cloud, FlaskConical,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -280,6 +280,7 @@ function CompanySubNav({ pathname }: { pathname: string }) {
     { label: "Company info",        icon: Info,          path: "/company" },
     { label: "Roles & permissions", icon: Shield,        path: "/company/roles" },
     { label: "Project templates",   icon: ClipboardList, path: "/company/templates" },
+    { label: "Chemical names",      icon: FlaskConical,  path: "/company/chemicals" },
     {
       label: "Safety talks", icon: BookOpen, path: "/company/safety",
       children: [
