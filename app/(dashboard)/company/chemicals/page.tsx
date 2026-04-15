@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, Trash2, Plus, FlaskConical } from "lucide-react";
+import { Loader2, Trash2, Plus } from "lucide-react";
 
 type Row = { id: string; application_type: string; name: string; unit: string | null; sort_order: number };
 
@@ -186,21 +186,7 @@ export default function CompanyChemicalsPage() {
   );
 
   return (
-    <div className="p-6 md:p-8 max-w-6xl mx-auto space-y-8 animate-in fade-in duration-300">
-      <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-lg bg-[#FF6633]/10 flex items-center justify-center flex-shrink-0">
-          <FlaskConical className="w-5 h-5 text-[#FF6633]" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Chemical names</h1>
-          <p className="text-sm text-gray-500 mt-1 max-w-2xl">
-            Default line items for <strong>Spraying</strong> and <strong>Wicking</strong> on the Chemicals screen in the field app.
-            Changes here should be loaded by the mobile app instead of a hardcoded list (use{" "}
-            <code className="text-xs bg-gray-100 px-1 rounded">GET /api/company/chemical-presets</code>).
-          </p>
-        </div>
-      </div>
-
+    <div className="p-6 md:p-8 max-w-6xl mx-auto space-y-6 animate-in fade-in duration-300">
       {loading ? (
         <div className="flex justify-center py-24">
           <Loader2 className="w-10 h-10 animate-spin text-[#FF6633]" />

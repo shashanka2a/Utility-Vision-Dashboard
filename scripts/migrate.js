@@ -183,24 +183,19 @@ const migrations = [
         ON public.company_chemical_presets (application_type, sort_order, name);
 
       INSERT INTO public.company_chemical_presets (application_type, name, unit, sort_order)
-      SELECT v.application_type, v.name, v.unit, v.sort_order
+      SELECT t.application_type, c.name, c.unit, c.sort_order
       FROM (
         VALUES
-          ('spraying'::text, 'Ecomazapyr 2'::text, 'oz.'::text, 0),
-          ('spraying', 'Glyphosate', 'GAL', 1),
-          ('spraying', 'Imazapyr 4', 'oz.', 2),
-          ('spraying', 'Milestone', 'oz.', 3),
-          ('spraying', 'Polaris', 'oz.', 4),
-          ('spraying', 'Regular Dye', 'oz.', 5),
-          ('spraying', 'Super Dye', 'oz.', 6),
-          ('spraying', 'Surfactant', 'oz.', 7),
-          ('wicking', '2,4-D', 'GAL', 0),
-          ('wicking', 'Glyphosate', 'GAL', 1),
-          ('wicking', 'Milestone', 'oz.', 2),
-          ('wicking', 'Regular Dye', 'oz.', 3),
-          ('wicking', 'Super Dye', 'oz.', 4),
-          ('wicking', 'Surfactant', 'oz.', 5)
-      ) AS v(application_type, name, unit, sort_order)
+          ('Glyphosate'::text, 'GAL'::text, 0),
+          ('Surfactant', 'oz', 1),
+          ('Super Dye', 'oz', 2),
+          ('2,4-D', 'GAL', 3),
+          ('Ecomazapyr 2SL', 'GAL', 4),
+          ('Regular Dye', 'oz', 5)
+      ) AS c(name, unit, sort_order)
+      CROSS JOIN (
+        VALUES ('spraying'::text), ('wicking'::text)
+      ) AS t(application_type)
       WHERE NOT EXISTS (SELECT 1 FROM public.company_chemical_presets LIMIT 1);
     `,
   },
