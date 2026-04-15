@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
+import { resolveProjectRow } from '@/lib/resolve-project';
 
 function safeRows<T>(res: { data: T | null; error: { message: string } | null }): T {
   if (res.error) {
@@ -305,38 +306,31 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const dateParam = searchParams.get('date');
   const projectParam = searchParams.get('project');
+  const projectIdParam = searchParams.get('project_id');
 
-  if (!dateParam || !projectParam || projectParam === 'All Projects') {
+  if (!dateParam || ((!projectParam || projectParam === 'All Projects') && !projectIdParam)) {
     return new NextResponse('Please select a specific project and date to generate a daily report.', { status: 400 });
   }
 
-  const projectQuery = projectParam.trim();
-  let { data: projectRow, error: projErr } = await supabaseServer
-    .from('projects')
-    .select('id, name, location, job_number')
-    .ilike('name', projectQuery)
-    .maybeSingle();
+  const { row: projectRow, error: resolveErr } = await resolveProjectRow(supabaseServer, {
+    projectId: projectIdParam,
+    projectName: projectParam?.trim() || null,
+  });
 
-  // If we didn't find an exact (case-insensitive) match, try a contains match.
-  if (!projErr && !projectRow) {
-    const fallback = await supabaseServer
-      .from('projects')
-      .select('id, name, location, job_number')
-      .ilike('name', `%${projectQuery}%`)
-      .limit(1);
-    projectRow = fallback.data?.[0] ?? null;
-    projErr = fallback.error as any;
+  if (resolveErr) {
+    console.warn('[daily-report]', resolveErr);
   }
 
-  if (projErr || !projectRow?.id) {
+  if (!projectRow?.id) {
+    const label = projectParam || projectIdParam || 'Unknown';
     return new NextResponse(
-      `<div style="padding:40px;font-family:sans-serif"><h2>Project not found</h2><p>No project named <b>${escapeHtml(projectParam)}</b>.</p></div>`,
+      `<div style="padding:40px;font-family:sans-serif"><h2>Project not found</h2><p>No project named <b>${escapeHtml(String(label))}</b>.</p></div>`,
       { status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' } }
     );
   }
 
   const projectId = projectRow.id;
-  const projectName = projectRow.name || projectParam;
+  const projectName = projectRow.name || projectParam || 'Project';
   const projectDisplayLocation = projectRow.location || 'Location not provided';
   const jobLabel = projectRow.job_number ? `Job # ${escapeHtml(String(projectRow.job_number))}` : 'Job # —';
 

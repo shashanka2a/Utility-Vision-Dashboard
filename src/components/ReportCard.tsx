@@ -7,6 +7,8 @@ import { useState } from "react";
 interface Report {
   id: string;
   projectName: string;
+  /** When set, daily report API resolves by UUID (avoids name mismatch) */
+  projectId?: string | null;
   date: string;
   timestamp: string;
   weather: {
@@ -27,6 +29,14 @@ export function ReportCard({ report }: ReportCardProps) {
   const WeatherIcon = report.weather.condition === 'rainy' ? CloudRain : 
                       report.weather.condition === 'sunny' ? Sun : Cloud;
 
+  const dailyReportQuery = () => {
+    const params = new URLSearchParams();
+    params.set('date', report.date || new Date().toISOString().split('T')[0]);
+    if (report.projectId) params.set('project_id', report.projectId);
+    else params.set('project', report.projectName);
+    return params.toString();
+  };
+
   // Mock detailed data for PDF preview
   const detailedReport = {
     workers: 12,
@@ -41,7 +51,7 @@ export function ReportCard({ report }: ReportCardProps) {
 
   const downloadPDF = (e: React.MouseEvent) => {
     e.stopPropagation();
-    window.open(`/api/reports/daily?project=${encodeURIComponent(report.projectName)}&date=${encodeURIComponent(report.date || new Date().toISOString().split('T')[0])}`, '_blank');
+    window.open(`/api/reports/daily?${dailyReportQuery()}`, '_blank');
   };
 
   return (
@@ -118,7 +128,7 @@ export function ReportCard({ report }: ReportCardProps) {
           className="border-t border-gray-100 bg-gray-50 animate-slideDown p-4"
         >
           <iframe 
-             src={`/api/reports/daily?project=${encodeURIComponent(report.projectName)}&date=${encodeURIComponent(report.date || new Date().toISOString().split('T')[0])}`}
+             src={`/api/reports/daily?${dailyReportQuery()}`}
              className="w-full h-[600px] bg-white rounded-lg shadow-inner"
              style={{ border: 'none' }}
              title="Daily Report Preview"

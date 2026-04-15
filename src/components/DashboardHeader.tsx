@@ -6,7 +6,7 @@ import {
   Briefcase
 } from "lucide-react";
 import { useProject } from "@/context/ProjectContext";
-import { format, addDays, subDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isToday, isWeekend, isPast } from "date-fns";
+import { format, addDays, subDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths } from "date-fns";
 import { useState, useRef, useEffect } from "react";
 import { useSearchParams, usePathname } from "next/navigation";
 
@@ -21,7 +21,6 @@ function CalendarDropdown({
 }) {
   const [currentMonth, setCurrentMonth] = useState(startOfMonth(selectedDate));
   const [daysWithData, setDaysWithData] = useState<Set<string>>(new Set());
-  const [loadingDots, setLoadingDots] = useState(false);
   
   const days = eachDayOfInterval({
     start: startOfWeek(startOfMonth(currentMonth)),
@@ -31,7 +30,6 @@ function CalendarDropdown({
   useEffect(() => {
     let cancelled = false;
     async function load() {
-      setLoadingDots(true);
       try {
         const params = new URLSearchParams();
         if (projectName && projectName !== "All Projects") params.set("project", projectName);
@@ -48,8 +46,6 @@ function CalendarDropdown({
         if (!cancelled) setDaysWithData(set);
       } catch {
         if (!cancelled) setDaysWithData(new Set());
-      } finally {
-        if (!cancelled) setLoadingDots(false);
       }
     }
     load();

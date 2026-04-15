@@ -2,7 +2,10 @@ import { supabaseServer } from '@/lib/supabase-server';
 
 export type DailyReportListItem = {
   id: string;
+  /** Canonical name from `projects.name` when resolvable */
   projectName: string;
+  /** Prefer passing this to `/api/reports/daily` — avoids name mismatches */
+  projectId: string | null;
   date: string;
   timestamp: string;
   weather: { high: number; low: number; condition: 'sunny' | 'rainy' | 'cloudy' };
@@ -14,6 +17,12 @@ function rowTimestamp(row: { logged_at?: string | null; created_at?: string | nu
   return row.logged_at || row.created_at || null;
 }
 
+function normName(s: string): string {
+  return s.trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
+type EntryValue = { date: string; projectId: string | null; projectName: string };
+
 /**
  * One entry per (calendar day in UTC, project) where any field module logged data.
  * Used by the Reports screen and GET /api/reports.
@@ -23,9 +32,39 @@ export async function getDailyReportListItems(): Promise<DailyReportListItem[]> 
   if (projectsError) {
     console.error('[daily-report-index] projects:', projectsError.message);
   }
-  const idToName = Object.fromEntries((projects || []).map((p) => [p.id as string, p.name as string]));
+  const projectList = projects || [];
+  const idToName = Object.fromEntries(projectList.map((p) => [p.id as string, p.name as string]));
+  const nameToCanonical = new Map<string, { id: string; name: string }>();
+  for (const p of projectList) {
+    nameToCanonical.set(normName(p.name as string), { id: p.id as string, name: p.name as string });
+  }
 
-  const keys = new Set<string>();
+  /** Deduped entries: prefer key by project UUID when known */
+  const entryMap = new Map<string, EntryValue>();
+
+  function addEntry(dateStr: string, projectId: string | null, rawName?: string | null) {
+    let pid = projectId;
+    let display = (rawName || '').trim();
+
+    if (pid && idToName[pid]) {
+      display = idToName[pid];
+    } else if (!pid && display) {
+      const hit = nameToCanonical.get(normName(display));
+      if (hit) {
+        pid = hit.id;
+        display = hit.name;
+      }
+    } else if (pid && !display) {
+      display = idToName[pid] || '';
+    }
+
+    if (!dateStr || !display) return;
+
+    const key = pid ? `${dateStr}|id:${pid}` : `${dateStr}|n:${normName(display)}`;
+    if (!entryMap.has(key)) {
+      entryMap.set(key, { date: dateStr, projectId: pid, projectName: display });
+    }
+  }
 
   const addFromRows = (rows: { logged_at?: string | null; created_at?: string | null; project_id?: string | null }[]) => {
     for (const row of rows) {
@@ -34,7 +73,7 @@ export async function getDailyReportListItems(): Promise<DailyReportListItem[]> 
       const name = idToName[row.project_id];
       if (!name) continue;
       const dateStr = new Date(ts).toISOString().split('T')[0];
-      keys.add(`${dateStr}|${name}`);
+      addEntry(dateStr, row.project_id, name);
     }
   };
 
@@ -44,7 +83,7 @@ export async function getDailyReportListItems(): Promise<DailyReportListItem[]> 
       const name = row.project_name;
       if (!ts || !name || typeof name !== 'string') continue;
       const dateStr = new Date(ts).toISOString().split('T')[0];
-      keys.add(`${dateStr}|${name}`);
+      addEntry(dateStr, null, name);
     }
   };
 
@@ -69,7 +108,6 @@ export async function getDailyReportListItems(): Promise<DailyReportListItem[]> 
     addFromRows(rows);
   }
 
-  // Unified activity feed (table or view): has project_name + created_at even when per-module queries are empty/RLS-blocked.
   const actRes = await supabaseServer.from('activities').select('created_at, project_name');
   if (actRes.error) {
     console.warn('[daily-report-index] activities:', actRes.error.message);
@@ -77,12 +115,10 @@ export async function getDailyReportListItems(): Promise<DailyReportListItem[]> 
     addFromActivities((actRes.data as { created_at?: string; project_name?: string }[]) || []);
   }
 
-  const items: DailyReportListItem[] = Array.from(keys).map((k) => {
-    const pipe = k.indexOf('|');
-    const date = k.slice(0, pipe);
-    const projectName = k.slice(pipe + 1);
-    const id = `${date}_${projectName.replace(/\s+/g, '_')}`;
-    const timestamp = new Date(`${date}T12:00:00.000Z`).toLocaleDateString('en-US', {
+  const items: DailyReportListItem[] = Array.from(entryMap.values()).map((e) => {
+    const slug = (e.projectId || e.projectName).toString().replace(/\s+/g, '_');
+    const id = `${e.date}_${slug}`;
+    const timestamp = new Date(`${e.date}T12:00:00.000Z`).toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
@@ -90,8 +126,9 @@ export async function getDailyReportListItems(): Promise<DailyReportListItem[]> 
     });
     return {
       id,
-      projectName,
-      date,
+      projectName: e.projectName,
+      projectId: e.projectId,
+      date: e.date,
       timestamp,
       weather: { high: 75, low: 60, condition: 'sunny' as const },
       photos: [],

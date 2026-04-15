@@ -8,6 +8,7 @@ import { useProject } from '@/context/ProjectContext';
 interface Report {
   id: string;
   projectName: string;
+  projectId?: string | null;
   date: string;
   timestamp: string;
   weather: {
