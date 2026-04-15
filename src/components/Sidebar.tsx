@@ -5,7 +5,7 @@ import {
   BarChart3, FileText, TrendingUp, Calendar, LayoutDashboard,
   Briefcase, ChevronDown, Users, Image, Settings,
   Shield, Info, ClipboardList, ChevronRight,
-  FolderOpen, CloudRain, BookOpen, Clock3, CalendarCheck, Sun, Cloud,
+  FolderOpen,   CloudRain, BookOpen, Clock3, CalendarCheck, Sun, Cloud,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -83,6 +83,7 @@ const PROJECT_NAV = [
     children: [
       { label: "Metrics",     view: "metrics" },
       { label: "Chemicals",   view: "chemicals" },
+      { label: "Inventory",   view: "inventory" },
       { label: "Notes",       view: "notes" },
       { label: "Attachments", view: "attachments" },
       { label: "Survey",      view: "survey" },

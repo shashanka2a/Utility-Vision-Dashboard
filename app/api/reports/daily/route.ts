@@ -106,84 +106,33 @@ function priClass(p: string | null | undefined): string {
   return 'pri-low';
 }
 
-/** Narrative lines for metrics + chemical logs (material usage) with optional per-entry signatures */
-function buildMaterialLogHtml(metricsDay: MetricRow[], chemDayLogs: unknown[]): string {
-  if (metricsDay.length === 0 && chemDayLogs.length === 0) return '';
+/** Inventory table from `inventory` (dashboard-managed; avoids duplicating metrics/chemicals narrative). */
+function buildInventoryHtml(rows: { name: string; quantity: number | null }[]): string {
+  if (rows.length === 0) return '';
 
-  const items: string[] = [];
-
-  const sortedM = [...metricsDay].sort(
-    (a, b) =>
-      new Date(a.logged_at || 0).getTime() - new Date(b.logged_at || 0).getTime()
-  );
-  for (const row of sortedM) {
-    const when = row.logged_at ? new Date(row.logged_at) : new Date();
-    const parts: string[] = [];
-    if (row.acres_completed != null && !Number.isNaN(Number(row.acres_completed))) {
-      parts.push(`Acres ${fmtNum(Number(row.acres_completed))} ac`);
-    }
-    if (row.green_space_completed != null && !Number.isNaN(Number(row.green_space_completed))) {
-      parts.push(`Green space ${fmtNum(Number(row.green_space_completed))} sq ft`);
-    }
-    if (row.water_usage != null && !Number.isNaN(Number(row.water_usage))) {
-      parts.push(`Water ${fmtNum(Number(row.water_usage), 0)} gal`);
-    }
-    if (row.number_of_operators != null && String(row.number_of_operators).trim() !== '') {
-      parts.push(`Operators ${row.number_of_operators}`);
-    }
-    const summary = parts.length ? parts.join(' · ') : 'Metrics log';
-    const noteExtra =
-      row.notes && String(row.notes).trim()
-        ? ` — ${escapeHtml(String(row.notes).slice(0, 220))}${String(row.notes).length > 220 ? '…' : ''}`
-        : '';
-    const sig = row.signature_url
-      ? `<div class="sig-inline"><img class="sig-img" src="${escapeHtml(row.signature_url)}" alt="Signature" /></div>`
-      : '';
-    items.push(`<div class="material-item">
-      <div class="val"><strong>Metrics</strong> — ${escapeHtml(summary)}${noteExtra}</div>
-      <div class="meta">${escapeHtml(when.toLocaleString('en-US'))}</div>
-      ${sig}
-    </div>`);
-  }
-
-  const sortedC = [...chemDayLogs].sort(
-    (a, b) =>
-      new Date((a as { logged_at?: string }).logged_at || 0).getTime() -
-      new Date((b as { logged_at?: string }).logged_at || 0).getTime()
-  );
-  for (const log of sortedC) {
-    const row = log as {
-      logged_at?: string;
-      application_type?: string;
-      notes?: string | null;
-      chemicals?: ChemLine[];
-      signature_url?: string | null;
-    };
-    const when = row.logged_at ? new Date(row.logged_at) : new Date();
-    const chems = Array.isArray(row.chemicals) ? row.chemicals : [];
-    const chemStr =
-      chems.length > 0
-        ? chems
-            .map((c) => `${escapeHtml(c.name)} ${fmtNum(Number(c.quantity), 2)} ${escapeHtml(c.unit || '')}`.trim())
-            .join('; ')
-        : '—';
-    const noteExtra =
-      row.notes && String(row.notes).trim()
-        ? ` — ${escapeHtml(String(row.notes).slice(0, 160))}${String(row.notes).length > 160 ? '…' : ''}`
-        : '';
-    const sig = row.signature_url
-      ? `<div class="sig-inline"><img class="sig-img" src="${escapeHtml(row.signature_url)}" alt="Signature" /></div>`
-      : '';
-    items.push(`<div class="material-item">
-      <div class="val"><strong>Chemicals</strong> — ${escapeHtml(row.application_type || 'Application')} — ${chemStr}${noteExtra}</div>
-      <div class="meta">${escapeHtml(when.toLocaleString('en-US'))}</div>
-      ${sig}
-    </div>`);
-  }
+  const tbody = rows
+    .map((r) => {
+      const q =
+        r.quantity != null && Number.isFinite(Number(r.quantity))
+          ? Number(r.quantity).toLocaleString('en-US', { maximumFractionDigits: 4 })
+          : '—';
+      return `<tr><td>${escapeHtml(r.name)}</td><td class="td-num"><span class="val">${escapeHtml(q)}</span></td></tr>`;
+    })
+    .join('');
 
   return `<div class="section-wrap">
-    <div class="section-header">Material log</div>
-    <div class="material-list">${items.join('')}</div>
+    <div class="section-header">Inventory</div>
+    <div class="table-wrap">
+      <table class="inventory-table">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Quantity</th>
+          </tr>
+        </thead>
+        <tbody>${tbody}</tbody>
+      </table>
+    </div>
   </div>`;
 }
 
@@ -286,11 +235,7 @@ const REPORT_CSS = `
   .survey-table td.italic { color: #555; font-style: italic; }
   .app-type-row { padding: 8px 16px; border-bottom: 1px solid #eee; font-size: 11px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .app-type-label { font-weight: 700; text-transform: uppercase; color: #666; }
-  .material-list { padding: 12px 16px; font-size: 13px; border: 1px solid #ddd; border-top: none; }
-  .material-item { border-left: 3px solid #FF6633; padding: 6px 12px; margin-bottom: 10px; }
-  .material-item .val { font-size: 13px; color: #222; line-height: 1.5; }
-  .material-item .meta { font-size: 11px; color: #888; font-weight: 600; margin-top: 4px; }
-  .material-item .sig-inline { margin-top: 8px; }
+  .inventory-table th:last-child, .inventory-table td:last-child { text-align: center; width: 160px; }
   .signature-gallery { display: flex; flex-wrap: wrap; gap: 20px; margin-top: 16px; align-items: flex-end; }
   .signature-gallery .sig-unit { max-width: 220px; }
   .signature-gallery .sig-unit .sig-meta { font-size: 11px; color: #888; font-weight: 600; margin-top: 6px; }
@@ -363,6 +308,7 @@ export async function GET(request: Request) {
     surveysRes,
     checklistsRes,
     attachRes,
+    inventoryRes,
   ] = await Promise.all([
     supabaseServer.from('notes').select('*').eq('project_id', projectId).gte('logged_at', startDate).lte('logged_at', endDate),
     supabaseServer.from('metrics').select('*').eq('project_id', projectId).gte('logged_at', startDate).lte('logged_at', endDate),
@@ -395,6 +341,7 @@ export async function GET(request: Request) {
       .lte('logged_at', endDate),
     supabaseServer.from('equipment_checklists').select('*').eq('project_id', projectId).gte('logged_at', startDate).lte('logged_at', endDate),
     supabaseServer.from('attachments').select('*').eq('project_id', projectId).gte('logged_at', startDate).lte('logged_at', endDate),
+    supabaseServer.from('inventory').select('name, quantity').eq('project_id', projectId).order('sort_order', { ascending: true }).order('name', { ascending: true }),
   ]);
 
   const notes = safeRows(notesRes);
@@ -409,6 +356,7 @@ export async function GET(request: Request) {
   const surveys = safeRows(surveysRes);
   const checklists = safeRows(checklistsRes);
   const attachments = safeRows(attachRes);
+  const inventoryRows = safeRows(inventoryRes) as { name: string; quantity: number | null }[];
 
   const dayAgg = aggregateMetrics(metricsDay);
   const weekAgg = aggregateMetrics(metricsWeek);
@@ -774,7 +722,7 @@ export async function GET(request: Request) {
   </div>`
       : '';
 
-  const materialLogSection = buildMaterialLogHtml(metricsDay, chemDayLogs);
+  const inventorySection = buildInventoryHtml(inventoryRows);
 
   const signatureRefs = collectDaySignatureRefs(metricsDay, chemDayLogs, checklists);
   const signatureGalleryHtml =
@@ -828,7 +776,7 @@ export async function GET(request: Request) {
 
   ${chemicalsSection}
 
-  ${materialLogSection}
+  ${inventorySection}
 
   ${
     incidentsHtml

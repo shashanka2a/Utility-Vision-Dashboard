@@ -8,7 +8,7 @@ import {
   Plus, MoreHorizontal, ArrowUpDown, Calendar,
   Clock, User, TrendingUp, BarChart as BarChartIcon,
   CheckCircle2, AlertTriangle, Info, Briefcase, ChevronDown, ChevronRight,
-  Maximize2, Share2, Star, Save, MapPin, Building2, Hash, Pencil, Trash2
+  Maximize2, Share2, Star, Save, MapPin,   Building2, Hash, Pencil, Trash2, Package
 } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { format, subDays, eachDayOfInterval, startOfWeek, endOfWeek } from "date-fns";
@@ -27,7 +27,7 @@ interface ProjectDetailScreenProps {
   title: string;
   icon: any;
   emptyMessage?: string;
-  dataType?: 'activity' | 'attachments' | 'checklists' | 'safety-talks' | 'observations' | 'incidents' | 'notes' | 'survey' | 'directory' | 'gallery' | 'settings' | 'metrics' | 'chemicals';
+  dataType?: 'activity' | 'attachments' | 'checklists' | 'safety-talks' | 'observations' | 'incidents' | 'notes' | 'survey' | 'directory' | 'gallery' | 'settings' | 'metrics' | 'chemicals' | 'inventory';
 }
 
 export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType }: ProjectDetailScreenProps) {
@@ -182,6 +182,77 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
       .catch(() => setChemicalsData([]))
       .finally(() => setChemicalsLoading(false));
   }, [dataType, selectedProject, selectedDate]);
+
+  // ── Inventory (per-project list; drives daily report table) ──
+  type InvRow = { id: string; name: string; quantity: number | null };
+  const [inventoryRows, setInventoryRows] = useState<InvRow[]>([]);
+  const [inventoryLoading, setInventoryLoading] = useState(false);
+  const [newInvName, setNewInvName] = useState('');
+  const [newInvQty, setNewInvQty] = useState('');
+  const [invSaving, setInvSaving] = useState(false);
+
+  const loadInventory = () => {
+    if (!selectedProject || selectedProject === 'All Projects') return;
+    setInventoryLoading(true);
+    const params = new URLSearchParams({ project: selectedProject });
+    fetch(`/api/inventory?${params.toString()}`)
+      .then((r) => r.json())
+      .then((d) => setInventoryRows(Array.isArray(d) ? d : []))
+      .catch(() => setInventoryRows([]))
+      .finally(() => setInventoryLoading(false));
+  };
+
+  useEffect(() => {
+    if (dataType !== 'inventory') return;
+    loadInventory();
+  }, [dataType, selectedProject]);
+
+  const addInventoryRow = async () => {
+    const name = newInvName.trim();
+    if (!name || !selectedProject || selectedProject === 'All Projects') return;
+    setInvSaving(true);
+    try {
+      const res = await fetch('/api/inventory', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ project: selectedProject, name, quantity: newInvQty.trim() || null }),
+      });
+      if (res.ok) {
+        setNewInvName('');
+        setNewInvQty('');
+        await loadInventory();
+      }
+    } finally {
+      setInvSaving(false);
+    }
+  };
+
+  const patchInventoryRow = async (id: string, patch: { name?: string; quantity?: string | null }) => {
+    setInvSaving(true);
+    try {
+      const res = await fetch(`/api/inventory/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(patch),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setInventoryRows((prev) => prev.map((r) => (r.id === id ? updated : r)));
+      }
+    } finally {
+      setInvSaving(false);
+    }
+  };
+
+  const deleteInventoryRow = async (id: string) => {
+    setInvSaving(true);
+    try {
+      const res = await fetch(`/api/inventory/${id}`, { method: 'DELETE' });
+      if (res.ok) setInventoryRows((prev) => prev.filter((r) => r.id !== id));
+    } finally {
+      setInvSaving(false);
+    }
+  };
 
   // helper: fetch any dedicated endpoint by dataType key
   function useDedicatedFetch(type: string, endpoint: string) {
@@ -554,6 +625,114 @@ export function ProjectDetailScreen({ title, icon: Icon, emptyMessage, dataType 
           onClose={() => setViewerState({ ...viewerState, isOpen: false })}
           metadata={viewerState.list[viewerState.index]}
         />
+      </div>
+    );
+  }
+
+  // ─── Inventory (editable; printed on daily report) ───
+  if (dataType === 'inventory') {
+    if (selectedProject === 'All Projects') {
+      return (
+        <div className="h-full flex items-center justify-center flex-col gap-3 text-gray-400">
+          <Package className="w-10 h-10 text-gray-200" />
+          <p className="text-sm font-medium">Select a specific project to manage inventory.</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="h-full flex flex-col bg-gray-50 flex-1 overflow-hidden">
+        <div className="px-8 py-5 bg-white border-b border-gray-100 flex-shrink-0">
+          <h2 className="text-base font-semibold text-gray-900">Inventory</h2>
+          <p className="text-xs text-gray-400 mt-0.5">
+            Current on-hand items for this project — appears as a table on the printable daily report.
+          </p>
+        </div>
+
+        <div className="flex-1 overflow-auto px-8 py-6">
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden max-w-3xl">
+            <div className="px-5 py-4 border-b border-gray-100 flex flex-wrap gap-3 items-end">
+              <div className="flex-1 min-w-[140px]">
+                <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Item name</label>
+                <input
+                  value={newInvName}
+                  onChange={(e) => setNewInvName(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+                  placeholder="e.g. Pipe 6&quot; PVC"
+                  disabled={invSaving}
+                />
+              </div>
+              <div className="w-32">
+                <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Quantity</label>
+                <input
+                  value={newInvQty}
+                  onChange={(e) => setNewInvQty(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm tabular-nums"
+                  placeholder="0"
+                  disabled={invSaving}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => void addInventoryRow()}
+                disabled={invSaving || !newInvName.trim()}
+                className="px-4 py-2 rounded-lg bg-[#FF6633] text-white text-sm font-medium hover:bg-[#E55A2B] disabled:opacity-50"
+              >
+                Add item
+              </button>
+            </div>
+
+            {inventoryLoading ? (
+              <div className="flex justify-center py-16">
+                <Loader2 className="w-8 h-8 animate-spin text-[#FF6633]" />
+              </div>
+            ) : inventoryRows.length === 0 ? (
+              <div className="py-12 text-center text-sm text-gray-400">No inventory yet. Add items above.</div>
+            ) : (
+              <div className="divide-y divide-gray-100">
+                <div className="grid grid-cols-[1fr_120px_auto] gap-3 px-5 py-2 bg-gray-50 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                  <span>Item</span>
+                  <span className="text-center">Quantity</span>
+                  <span className="w-20" />
+                </div>
+                {inventoryRows.map((row) => (
+                  <div key={row.id} className="grid grid-cols-[1fr_120px_auto] gap-3 px-5 py-3 items-center hover:bg-gray-50/60">
+                    <input
+                      defaultValue={row.name}
+                      key={`${row.id}-name-${row.name}`}
+                      className="rounded border border-transparent hover:border-gray-200 focus:border-[#FF6633] focus:ring-1 focus:ring-[#FF6633] px-2 py-1.5 text-sm"
+                      disabled={invSaving}
+                      onBlur={(e) => {
+                        const v = e.target.value.trim();
+                        if (v && v !== row.name) void patchInventoryRow(row.id, { name: v });
+                      }}
+                    />
+                    <input
+                      defaultValue={row.quantity != null ? String(row.quantity) : ''}
+                      key={`${row.id}-qty-${row.quantity}`}
+                      className="text-center rounded border border-transparent hover:border-gray-200 focus:border-[#FF6633] focus:ring-1 focus:ring-[#FF6633] px-2 py-1.5 text-sm tabular-nums"
+                      disabled={invSaving}
+                      onBlur={(e) => {
+                        const v = e.target.value.trim();
+                        const prev = row.quantity != null ? String(row.quantity) : '';
+                        if (v !== prev) void patchInventoryRow(row.id, { quantity: v === '' ? null : v });
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="text-gray-400 hover:text-red-600 p-2 justify-self-end"
+                      aria-label="Delete row"
+                      disabled={invSaving}
+                      onClick={() => void deleteInventoryRow(row.id)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     );
   }

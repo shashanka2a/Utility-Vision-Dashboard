@@ -73,8 +73,9 @@ export function ReportCard({ report }: ReportCardProps) {
       <div className="flex items-stretch">
         {/* Expand area (takes up most of the row) */}
         <button
+          type="button"
           onClick={() => setIsExpanded(!isExpanded)}
-          className="flex-1 p-5 text-left hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#FF6633]"
+          className="flex-1 p-5 text-left hover:bg-gray-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-gray-200"
           aria-expanded={isExpanded}
           aria-controls={`report-details-${report.id}`}
         >
@@ -112,21 +113,29 @@ export function ReportCard({ report }: ReportCardProps) {
         </button>
 
         {/* Right-side actions — sibling, NOT nested inside the expand button */}
-        <div className="flex items-center gap-1 pr-4 flex-shrink-0">
+        <div className="flex items-center gap-0.5 pr-3 flex-shrink-0 self-stretch">
           <button
+            type="button"
             onClick={downloadPDF}
-            className="p-2 hover:bg-[#FFEBEE] rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-[#F44336]"
+            className="p-2 hover:bg-[#FFEBEE] rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F44336]/40"
             aria-label="Download PDF report"
             title="Download PDF"
           >
             <FileDown className="w-4 h-4 text-[#F44336]" />
           </button>
-          <ChevronDown
-            className={`w-5 h-5 text-gray-400 transition-transform duration-200 pointer-events-none ${
-              isExpanded ? 'rotate-180' : ''
-            }`}
-            aria-hidden="true"
-          />
+          <button
+            type="button"
+            onClick={() => setIsExpanded((v) => !v)}
+            className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-200"
+            aria-expanded={isExpanded}
+            aria-controls={`report-details-${report.id}`}
+            aria-label={isExpanded ? 'Collapse report' : 'Expand report'}
+            title={isExpanded ? 'Collapse' : 'Expand'}
+          >
+            <ChevronDown
+              className={`w-5 h-5 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+            />
+          </button>
         </div>
       </div>
 
