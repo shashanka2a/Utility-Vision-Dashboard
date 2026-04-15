@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
 import { formatProjectAddress, resolveProjectRow } from '@/lib/resolve-project';
 import { isUuidLike } from '@/lib/is-uuid';
-import { fetchDayWeatherForReport } from '@/lib/weather-report';
 
 function safeRows<T>(res: { data: T | null; error: { message: string } | null }): T {
   if (res.error) {
@@ -249,58 +248,6 @@ const REPORT_CSS = `
   @media print { body { background: #fff; } .report-sheet { margin: 0; box-shadow: none; max-width: none; } }
 `;
 
-function buildWeatherSectionHtml(
-  dateYmd: string,
-  weather: Awaited<ReturnType<typeof fetchDayWeatherForReport>>,
-  projectRow: { zip_code?: string | null; city?: string | null; state?: string | null }
-): string {
-  const hasLoc = Boolean(projectRow.zip_code?.trim() || [projectRow.city, projectRow.state].filter(Boolean).length);
-
-  if (weather) {
-    const detailBits: string[] = [];
-    if (weather.precipInches != null) detailBits.push(`Precip ${weather.precipInches.toFixed(2)} in`);
-    if (weather.windMph != null) detailBits.push(`Wind max ${weather.windMph} mph`);
-    const detailLine = detailBits.length ? detailBits.join(' · ') : 'Daily summary';
-
-    return `<div class="section-wrap">
-    <div class="section-header">Weather — ${escapeHtml(dateYmd)}</div>
-    <div class="weather-grid">
-      <div class="weather-cell">
-        <div class="time">High</div>
-        <div class="temp">${weather.highF}°</div>
-        <div class="cond">°F</div>
-        <div class="info">Daytime high</div>
-      </div>
-      <div class="weather-cell">
-        <div class="time">Low</div>
-        <div class="temp">${weather.lowF}°</div>
-        <div class="cond">°F</div>
-        <div class="info">Daily low</div>
-      </div>
-      <div class="weather-cell">
-        <div class="time">Sky</div>
-        <div class="temp" style="font-size:20px;line-height:1.2;">${escapeHtml(weather.conditionLabel)}</div>
-        <div class="cond">Conditions</div>
-        <div class="info">${escapeHtml(detailLine)}</div>
-      </div>
-    </div>
-    <p style="font-size:10px;color:#999;padding:8px 16px 14px;margin:0;border-top:1px solid #eee;">
-      Open-Meteo · Project area (${hasLoc ? 'zip or city from project record' : 'location unknown'})
-    </p>
-  </div>`;
-  }
-
-  const hint = hasLoc
-    ? 'Weather could not be loaded for this date or location (Open-Meteo).'
-    : 'Add a zip code or city/state on the project to show weather.';
-  return `<div class="section-wrap">
-    <div class="section-header">Weather</div>
-    <div class="notes-body" style="padding:14px 20px;color:#555;font-size:13px;">
-      ${escapeHtml(hint)}
-    </div>
-  </div>`;
-}
-
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const dateParam = searchParams.get('date');
@@ -362,7 +309,6 @@ export async function GET(request: Request) {
     checklistsRes,
     attachRes,
     inventoryRes,
-    dayWeather,
   ] = await Promise.all([
     supabaseServer.from('notes').select('*').eq('project_id', projectId).gte('logged_at', startDate).lte('logged_at', endDate),
     supabaseServer.from('metrics').select('*').eq('project_id', projectId).gte('logged_at', startDate).lte('logged_at', endDate),
@@ -396,7 +342,6 @@ export async function GET(request: Request) {
     supabaseServer.from('equipment_checklists').select('*').eq('project_id', projectId).gte('logged_at', startDate).lte('logged_at', endDate),
     supabaseServer.from('attachments').select('*').eq('project_id', projectId).gte('logged_at', startDate).lte('logged_at', endDate),
     supabaseServer.from('inventory').select('name, quantity').eq('project_id', projectId).order('sort_order', { ascending: true }).order('name', { ascending: true }),
-    fetchDayWeatherForReport(projectRow, dateParam),
   ]);
 
   const notes = safeRows(notesRes);
@@ -731,7 +676,7 @@ export async function GET(request: Request) {
     )
     .join('');
 
-  const weatherSection = buildWeatherSectionHtml(dateParam, dayWeather, projectRow);
+  const weatherSection = ''; // Weather is not stored in DB yet; omit section to avoid misleading data.
 
   const metricsSection =
     metricsDay.length > 0
