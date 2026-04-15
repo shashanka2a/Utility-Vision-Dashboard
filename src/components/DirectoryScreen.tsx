@@ -155,7 +155,11 @@ export function DirectoryScreen({ projectFilter }: { projectFilter?: string }) {
       let [empData, projData] = await Promise.all([empRes.json(), projRes.json()]);
       
       if (projectFilter && projectFilter !== 'All Projects') {
-         empData = empData.filter((e: any) => e.assigned_projects?.includes(projectFilter));
+         // Filter to only active employees assigned to this specific project (case-insensitive match)
+         empData = empData.filter((e: any) => 
+            e.status === 'active' && 
+            e.assigned_projects?.some((p: string) => p.toLowerCase() === projectFilter.toLowerCase())
+         );
       }
       
       setEmployees(empData);
@@ -300,10 +304,13 @@ export function DirectoryScreen({ projectFilter }: { projectFilter?: string }) {
       <div className="bg-white border-b border-gray-200 px-6 py-5 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold text-black">Directory</h1>
+            <h1 className="text-2xl font-semibold text-black">
+              {projectFilter && projectFilter !== 'All Projects' ? `${projectFilter} Directory` : 'Directory'}
+            </h1>
             <p className="text-sm text-gray-500 mt-1">
               <span className="font-medium text-gray-700">{filteredEmployees.length}</span> team members &middot;{' '}
               <span className="font-medium text-[#4CAF50]">{activeCount} active</span>
+              {projectFilter && projectFilter !== 'All Projects' && ' (Currently assigned to Project)'}
             </p>
           </div>
           <div className="flex items-center gap-3">

@@ -41,7 +41,7 @@ export async function GET(request: Request) {
 // POST /api/chemicals — called from mobile app when saving a chemical log
 export async function POST(request: Request) {
   const body = await request.json();
-  const { project_id, application_type, chemicals, notes, photos } = body;
+  const { project_id, application_type, chemicals, notes, photos, signature_url } = body;
 
   if (!project_id) {
     return NextResponse.json({ error: 'project_id is required' }, { status: 400 });
@@ -55,6 +55,7 @@ export async function POST(request: Request) {
       application_type: application_type || 'Spraying',
       notes: notes || null,
       photos: photos || [],
+      signature_url: typeof signature_url === 'string' && signature_url.length > 0 ? signature_url : null,
       logged_at: new Date().toISOString(),
     }])
     .select()

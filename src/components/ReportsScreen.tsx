@@ -19,27 +19,32 @@ interface Report {
 }
 
 export function ReportsScreen({ initialReports }: { initialReports?: Report[] }) {
-  const [reports, setReports] = useState<Report[]>(initialReports || []);
-  const [loading, setLoading] = useState(!initialReports);
+  const initial = initialReports ?? [];
+  const [reports, setReports] = useState<Report[]>(initial);
+  // Show spinner when SSR returned no rows so we still run the client fetch and don't flash "No reports".
+  const [loading, setLoading] = useState(initial.length === 0);
 
   useEffect(() => {
-    // If we have initial reports, we don't NEED to fetch immediately
-    if (initialReports && initialReports.length > 0) return;
-    
-    async function fetchReports() {
+    if (initial.length > 0) return;
 
+    async function fetchReports() {
       try {
         const res = await fetch('/api/reports');
         const data = await res.json();
-        setReports(data || []);
+        if (!res.ok) {
+          console.error('Reports API error:', data?.error || res.status);
+          setReports([]);
+          return;
+        }
+        setReports(Array.isArray(data) ? data : []);
       } catch (error) {
-        console.error("Error fetching reports:", error);
+        console.error('Error fetching reports:', error);
       } finally {
         setLoading(false);
       }
     }
     fetchReports();
-  }, []);
+  }, [initial.length]);
 
   return (
     <div className="h-full flex flex-col bg-gray-50">

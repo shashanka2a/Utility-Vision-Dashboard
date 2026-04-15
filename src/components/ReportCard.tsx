@@ -41,7 +41,7 @@ export function ReportCard({ report }: ReportCardProps) {
 
   const downloadPDF = (e: React.MouseEvent) => {
     e.stopPropagation();
-    alert('PDF download would start here');
+    window.open(`/api/reports/daily?project=${encodeURIComponent(report.projectName)}&date=${encodeURIComponent(report.date || new Date().toISOString().split('T')[0])}`, '_blank');
   };
 
   return (
@@ -111,160 +111,26 @@ export function ReportCard({ report }: ReportCardProps) {
         </div>
       </div>
 
-
-      {/* Expanded PDF Preview */}
+      {/* Expanded API HTML iframe preview */}
       {isExpanded && (
         <div 
           id={`report-details-${report.id}`}
-          className="border-t border-gray-100 bg-gray-50 animate-slideDown"
+          className="border-t border-gray-100 bg-gray-50 animate-slideDown p-4"
         >
-          {/* PDF-Style Summary */}
-          <div className="p-6 bg-white m-4 rounded-lg border border-gray-200 shadow-sm">
-            {/* PDF Header */}
-            <div className="flex items-start justify-between pb-4 border-b border-gray-200">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 bg-[#FF6633] rounded flex items-center justify-center">
-                    <span className="text-white font-bold text-sm">UV</span>
-                  </div>
-                  <span className="font-semibold text-gray-900">Utility Vision</span>
-                </div>
-                <h2 className="text-xl font-bold text-black mb-1">Daily Field Report</h2>
-                <p className="text-sm text-gray-600">{report.projectName}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm font-medium text-gray-900">{report.date}</p>
-                <p className="text-xs text-gray-500 mt-1">Report #{report.id}</p>
-              </div>
-            </div>
-
-            {/* Key Metrics Grid */}
-            <div className="grid grid-cols-4 gap-4 py-4 border-b border-gray-200">
-              <div className="text-center">
-                <div className="flex items-center justify-center mb-1">
-                  <Users className="w-4 h-4 text-[#FF6633]" />
-                </div>
-                <p className="text-2xl font-bold text-black">{detailedReport.workers}</p>
-                <p className="text-xs text-gray-500 mt-1">Workers</p>
-              </div>
-              <div className="text-center">
-                <div className="flex items-center justify-center mb-1">
-                  <Clock className="w-4 h-4 text-[#FF6633]" />
-                </div>
-                <p className="text-2xl font-bold text-black">{detailedReport.hoursWorked}</p>
-                <p className="text-xs text-gray-500 mt-1">Hours</p>
-              </div>
-              <div className="text-center">
-                <div className="flex items-center justify-center mb-1">
-                  <MapPin className="w-4 h-4 text-[#FF6633]" />
-                </div>
-                <p className="text-2xl font-bold text-black">{detailedReport.acresCompleted}</p>
-                <p className="text-xs text-gray-500 mt-1">Acres</p>
-              </div>
-              <div className="text-center">
-                <div className="flex items-center justify-center mb-1">
-                  <CheckCircle className="w-4 h-4 text-[#4CAF50]" />
-                </div>
-                <p className="text-2xl font-bold text-black">{detailedReport.safetyIncidents}</p>
-                <p className="text-xs text-gray-500 mt-1">Incidents</p>
-              </div>
-            </div>
-
-            {/* Weather Details */}
-            <div className="py-4 border-b border-gray-200">
-              <h3 className="text-sm font-semibold text-gray-900 mb-2">Weather Conditions</h3>
-              <div className="flex items-center gap-2">
-                <WeatherIcon className="w-5 h-5 text-[#2196F3]" />
-                <span className="text-sm text-gray-700 capitalize">{report.weather.condition}</span>
-                <span className="text-sm text-gray-500">•</span>
-                <span className="text-sm text-gray-700">
-                  High: {report.weather.high}°F, Low: {report.weather.low}°F
-                </span>
-              </div>
-            </div>
-
-            {/* Work Completed */}
-            <div className="py-4 border-b border-gray-200">
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">Work Completed</h3>
-              <ul className="space-y-2">
-                {detailedReport.completed.map((item, index) => (
-                  <li key={index} className="flex items-start gap-2 text-sm text-gray-700">
-                    <CheckCircle className="w-4 h-4 text-[#4CAF50] mt-0.5 flex-shrink-0" />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Equipment */}
-            <div className="py-4 border-b border-gray-200">
-              <h3 className="text-sm font-semibold text-gray-900 mb-2">Equipment Used</h3>
-              <div className="flex flex-wrap gap-2">
-                {detailedReport.equipmentUsed.map((equipment, index) => (
-                  <span key={index} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
-                    {equipment}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Delays */}
-            {detailedReport.delays.length > 0 && (
-              <div className="py-4 border-b border-gray-200">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">Delays & Issues</h3>
-                <ul className="space-y-2">
-                  {detailedReport.delays.map((delay, index) => (
-                    <li key={index} className="flex items-start gap-2 text-sm text-gray-700">
-                      <AlertCircle className="w-4 h-4 text-[#FFC107] mt-0.5 flex-shrink-0" />
-                      <span>{delay}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Notes */}
-            <div className="py-4 border-b border-gray-200">
-              <h3 className="text-sm font-semibold text-gray-900 mb-2">Supervisor Notes</h3>
-              <p className="text-sm text-gray-700 leading-relaxed">{detailedReport.notes}</p>
-            </div>
-
-            {/* Photos */}
-            {report.photos.length > 0 && (
-              <div className="py-4">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">Site Photos</h3>
-                <div className="grid grid-cols-4 gap-3">
-                  {report.photos.map((photo, index) => (
-                    <button
-                      key={index}
-                      className="aspect-square relative group overflow-hidden rounded-lg border-2 border-gray-200 hover:border-[#FF6633] transition-all focus:outline-none focus:ring-2 focus:ring-[#FF6633] focus:ring-offset-2"
-                      aria-label={`View photo ${index + 1} of ${report.photos.length}`}
-                    >
-                      <Image
-                        src={photo}
-                        alt={`Report photo ${index + 1}`}
-                        width={200}
-                        height={200}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                      />
-                      <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-10 transition-opacity" />
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* PDF Footer */}
-            <div className="pt-4 mt-4 border-t border-gray-200 flex items-center justify-between">
-              <p className="text-xs text-gray-500">Powered by Utility Vision</p>
-              <button
-                onClick={downloadPDF}
-                className="flex items-center gap-2 px-4 py-2 bg-[#F44336] text-white rounded hover:bg-[#E53935] transition-colors text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#F44336] focus:ring-offset-2"
-              >
-                <FileDown className="w-4 h-4" />
-                Download Full Report
-              </button>
-            </div>
+          <iframe 
+             src={`/api/reports/daily?project=${encodeURIComponent(report.projectName)}&date=${encodeURIComponent(report.date || new Date().toISOString().split('T')[0])}`}
+             className="w-full h-[600px] bg-white rounded-lg shadow-inner"
+             style={{ border: 'none' }}
+             title="Daily Report Preview"
+          />
+          <div className="pt-4 flex justify-end">
+            <button
+               onClick={downloadPDF}
+               className="flex items-center gap-2 px-4 py-2 bg-[#F44336] text-white rounded hover:bg-[#E53935] transition-colors text-sm font-medium focus:outline-none flex-shrink-0"
+            >
+               <FileDown className="w-4 h-4" />
+               View Full Report (Printable)
+            </button>
           </div>
         </div>
       )}
