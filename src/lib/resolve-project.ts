@@ -60,7 +60,18 @@ export async function resolveProjectRow(
 
   const { data: all, error } = await supabase.from('projects').select('id, name, location, job_number');
   if (error) return { row: null, error: error.message };
-  if (!all?.length) return { row: null, error: null };
+  if (!all?.length) {
+    // This is almost always either (a) no projects exist, or (b) RLS blocked reads due to missing service role.
+    const countRes = await supabase.from('projects').select('id', { count: 'exact', head: true });
+    const c = typeof countRes.count === 'number' ? countRes.count : null;
+    return {
+      row: null,
+      error:
+        c === 0
+          ? 'No readable rows in `projects`. If projects exist, set SUPABASE_SERVICE_ROLE_KEY on the server (anon key is subject to RLS).'
+          : null,
+    };
+  }
 
   const nq = norm(q);
 

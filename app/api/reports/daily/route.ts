@@ -324,6 +324,10 @@ export async function GET(request: Request) {
 
   if (resolveErr) {
     console.warn('[daily-report]', resolveErr);
+    return new NextResponse(
+      `<div style="padding:40px;font-family:sans-serif"><h2>Cannot resolve project</h2><p>${escapeHtml(resolveErr)}</p></div>`,
+      { status: 500, headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+    );
   }
 
   if (!projectRow?.id) {
