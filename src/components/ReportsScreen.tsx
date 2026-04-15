@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Calendar, SlidersHorizontal, FileDown, Loader2 } from 'lucide-react';
 import { ReportCard } from './ReportCard';
+import { useProject } from '@/context/ProjectContext';
 
 interface Report {
   id: string;
@@ -19,6 +20,7 @@ interface Report {
 }
 
 export function ReportsScreen({ initialReports }: { initialReports?: Report[] }) {
+  const { selectedProject } = useProject();
   const initial = initialReports ?? [];
   const [reports, setReports] = useState<Report[]>(initial);
   // Show spinner when SSR returned no rows so we still run the client fetch and don't flash "No reports".
@@ -29,7 +31,9 @@ export function ReportsScreen({ initialReports }: { initialReports?: Report[] })
 
     async function fetchReports() {
       try {
-        const res = await fetch('/api/reports');
+        const params = new URLSearchParams();
+        if (selectedProject && selectedProject !== 'All Projects') params.set('project', selectedProject);
+        const res = await fetch(`/api/reports?${params.toString()}`);
         const data = await res.json();
         if (!res.ok) {
           console.error('Reports API error:', data?.error || res.status);
@@ -44,7 +48,7 @@ export function ReportsScreen({ initialReports }: { initialReports?: Report[] })
       }
     }
     fetchReports();
-  }, [initial.length]);
+  }, [initial.length, selectedProject]);
 
   return (
     <div className="h-full flex flex-col bg-gray-50">
@@ -75,7 +79,7 @@ export function ReportsScreen({ initialReports }: { initialReports?: Report[] })
           </div>
         ) : reports.length === 0 ? (
           <div className="flex justify-center items-center h-48 text-gray-500">
-             No reports generated recently.
+             No reports generated recently{selectedProject && selectedProject !== 'All Projects' ? ` for ${selectedProject}.` : '.'}
           </div>
         ) : (
           reports.map(report => (

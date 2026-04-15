@@ -310,11 +310,23 @@ export async function GET(request: Request) {
     return new NextResponse('Please select a specific project and date to generate a daily report.', { status: 400 });
   }
 
-  const { data: projectRow, error: projErr } = await supabaseServer
+  const projectQuery = projectParam.trim();
+  let { data: projectRow, error: projErr } = await supabaseServer
     .from('projects')
     .select('id, name, location, job_number')
-    .eq('name', projectParam)
+    .ilike('name', projectQuery)
     .maybeSingle();
+
+  // If we didn't find an exact (case-insensitive) match, try a contains match.
+  if (!projErr && !projectRow) {
+    const fallback = await supabaseServer
+      .from('projects')
+      .select('id, name, location, job_number')
+      .ilike('name', `%${projectQuery}%`)
+      .limit(1);
+    projectRow = fallback.data?.[0] ?? null;
+    projErr = fallback.error as any;
+  }
 
   if (projErr || !projectRow?.id) {
     return new NextResponse(

@@ -10,28 +10,58 @@ import { format, addDays, subDays, startOfMonth, endOfMonth, startOfWeek, endOfW
 import { useState, useRef, useEffect } from "react";
 import { useSearchParams, usePathname } from "next/navigation";
 
-function CalendarDropdown({ selectedDate, onSelect }: { selectedDate: Date, onSelect: (date: Date) => void }) {
+function CalendarDropdown({
+  selectedDate,
+  onSelect,
+  projectName,
+}: {
+  selectedDate: Date;
+  onSelect: (date: Date) => void;
+  projectName: string;
+}) {
   const [currentMonth, setCurrentMonth] = useState(startOfMonth(selectedDate));
+  const [daysWithData, setDaysWithData] = useState<Set<string>>(new Set());
+  const [loadingDots, setLoadingDots] = useState(false);
   
   const days = eachDayOfInterval({
     start: startOfWeek(startOfMonth(currentMonth)),
     end: endOfWeek(endOfMonth(currentMonth))
   });
 
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      setLoadingDots(true);
+      try {
+        const params = new URLSearchParams();
+        if (projectName && projectName !== "All Projects") params.set("project", projectName);
+        const res = await fetch(`/api/reports?${params.toString()}`);
+        const data = await res.json();
+        if (!res.ok || !Array.isArray(data)) {
+          if (!cancelled) setDaysWithData(new Set());
+          return;
+        }
+        const set = new Set<string>();
+        for (const r of data) {
+          if (r?.date) set.add(String(r.date).slice(0, 10));
+        }
+        if (!cancelled) setDaysWithData(set);
+      } catch {
+        if (!cancelled) setDaysWithData(new Set());
+      } finally {
+        if (!cancelled) setLoadingDots(false);
+      }
+    }
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [projectName, currentMonth]);
+
   const getStatusIndicator = (day: Date) => {
     const dayStr = format(day, "yyyy-MM-dd");
-    if (dayStr === "2026-03-18" || dayStr === "2026-03-25" || dayStr === "2026-03-26" || dayStr === "2026-03-27" || dayStr === "2026-03-30" || dayStr === "2026-03-31") {
+    if (daysWithData.has(dayStr)) {
       return <div className="w-1.5 h-1.5 rounded-full bg-green-500 mx-auto mt-0.5" />;
-    }
-    if (['2026-03-02', '2026-03-09', '2026-03-16', '2026-03-23'].includes(dayStr)) {
-       return <div className="w-2.5 h-[3px] rounded-full bg-yellow-400 mx-auto mt-0.5" />;
-    }
-    if (isPast(day) && !isWeekend(day) && !isToday(day)) {
-      return (
-        <svg viewBox="0 0 24 24" fill="currentColor" className="w-[8px] h-[8px] text-red-500 mx-auto mt-0.5">
-          <path d="M12 2L22 20H2L12 2Z" />
-        </svg>
-      );
     }
     return <div className="h-2 w-2 mt-0.5" />;
   };
@@ -173,7 +203,16 @@ export function DashboardHeader() {
                <span className="text-sm text-gray-700 font-medium flex-1 text-left">{formattedDate}</span>
                <CalendarIcon className="w-4 h-4 text-gray-400" />
             </button>
-            {calendarOpen && <CalendarDropdown selectedDate={selectedDate} onSelect={(d) => { setSelectedDate(d); setCalendarOpen(false); }} />}
+            {calendarOpen && (
+              <CalendarDropdown
+                selectedDate={selectedDate}
+                projectName={selectedProject}
+                onSelect={(d) => {
+                  setSelectedDate(d);
+                  setCalendarOpen(false);
+                }}
+              />
+            )}
           </div>
 
           <button onClick={handleNextDay} className="p-1.5 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-gray-600">
