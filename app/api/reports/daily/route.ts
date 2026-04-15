@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
-import { resolveProjectRow } from '@/lib/resolve-project';
+import { formatProjectAddress, resolveProjectRow } from '@/lib/resolve-project';
 import { isUuidLike } from '@/lib/is-uuid';
 
 function safeRows<T>(res: { data: T | null; error: { message: string } | null }): T {
@@ -344,7 +344,7 @@ export async function GET(request: Request) {
 
   const projectId = projectRow.id;
   const projectName = projectRow.name || projectParam || 'Project';
-  const projectDisplayLocation = projectRow.location || 'Location not provided';
+  const projectDisplayLocation = formatProjectAddress(projectRow);
   const jobLabel = projectRow.job_number ? `Job # ${escapeHtml(String(projectRow.job_number))}` : 'Job # —';
 
   const { start: startDate, end: endDate } = utcDayBounds(dateParam);
