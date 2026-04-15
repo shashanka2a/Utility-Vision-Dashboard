@@ -1,7 +1,6 @@
 "use client";
 
-import { FileDown, CloudRain, Cloud, Sun, ChevronDown, Calendar, MapPin, Users, Clock, AlertCircle, CheckCircle } from "lucide-react";
-import Image from "next/image";
+import { FileDown, ChevronDown, Calendar, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { isUuidLike } from "@/lib/is-uuid";
 
@@ -40,38 +39,81 @@ function buildDailyReportParams(report: Report): URLSearchParams {
   return params;
 }
 
+function skyDetailLine(precipInches: number | null, windMph: number | null): string {
+  const bits: string[] = [];
+  if (precipInches != null && Number.isFinite(precipInches)) {
+    bits.push(`Precip ${precipInches.toFixed(2)} in`);
+  }
+  if (windMph != null && Number.isFinite(windMph)) {
+    bits.push(`Wind max ${windMph} mph`);
+  }
+  return bits.length ? bits.join(' · ') : 'Daily summary';
+}
+
+type WeatherFetchState =
+  | { status: 'loading' }
+  | {
+      status: 'ok';
+      high: number;
+      low: number;
+      label: string;
+      precipInches: number | null;
+      windMph: number | null;
+      hasProjectLocation: boolean;
+    }
+  | { status: 'error'; hasProjectLocation: boolean };
+
 export function ReportCard({ report }: ReportCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [liveWeather, setLiveWeather] = useState<{
-    high: number;
-    low: number;
-    condition: 'sunny' | 'rainy' | 'cloudy';
-  } | null>(null);
-  /** True after fetch when API had no numeric hi/lo (or request failed). */
-  const [weatherUnavailable, setWeatherUnavailable] = useState(false);
+  const [weatherState, setWeatherState] = useState<WeatherFetchState>({ status: 'loading' });
+
+  const dateYmd =
+    report.date && /^\d{4}-\d{2}-\d{2}/.test(report.date)
+      ? report.date.slice(0, 10)
+      : new Date().toISOString().split('T')[0];
 
   useEffect(() => {
     const params = buildDailyReportParams(report);
-    setLiveWeather(null);
-    setWeatherUnavailable(false);
+    setWeatherState({ status: 'loading' });
 
     let cancelled = false;
     fetch(`/api/weather/day?${params.toString()}`)
       .then((r) => r.json())
-      .then((data: { high?: number | null; low?: number | null; condition?: string }) => {
-        if (cancelled) return;
-        if (typeof data.high === 'number' && typeof data.low === 'number' && data.condition) {
-          const c = data.condition;
-          if (c === 'sunny' || c === 'rainy' || c === 'cloudy') {
-            setLiveWeather({ high: data.high, low: data.low, condition: c });
-            setWeatherUnavailable(false);
+      .then(
+        (data: {
+          high?: number | null;
+          low?: number | null;
+          label?: string | null;
+          precipInches?: number | null;
+          windMph?: number | null;
+          hasProjectLocation?: boolean;
+        }) => {
+          if (cancelled) return;
+          if (
+            typeof data.high === 'number' &&
+            typeof data.low === 'number' &&
+            typeof data.label === 'string' &&
+            data.label.length > 0
+          ) {
+            setWeatherState({
+              status: 'ok',
+              high: data.high,
+              low: data.low,
+              label: data.label,
+              precipInches: data.precipInches ?? null,
+              windMph: data.windMph ?? null,
+              hasProjectLocation: Boolean(data.hasProjectLocation),
+            });
             return;
           }
+          setWeatherState({
+            status: 'error',
+            hasProjectLocation: Boolean(data.hasProjectLocation),
+          });
         }
-        setWeatherUnavailable(true);
-      })
+      )
       .catch(() => {
-        if (!cancelled) setWeatherUnavailable(true);
+        if (!cancelled) setWeatherState({ status: 'error', hasProjectLocation: false });
       });
 
     return () => {
@@ -79,34 +121,18 @@ export function ReportCard({ report }: ReportCardProps) {
     };
   }, [report.date, report.projectId, report.projectName]);
 
-  const displayWeather = liveWeather ?? report.weather;
-  const WeatherIcon =
-    weatherUnavailable && !liveWeather
-      ? Cloud
-      : displayWeather.condition === 'rainy'
-        ? CloudRain
-        : displayWeather.condition === 'sunny'
-          ? Sun
-          : Cloud;
-
   const dailyReportQuery = () => buildDailyReportParams(report).toString();
-
-  // Mock detailed data for PDF preview
-  const detailedReport = {
-    workers: 12,
-    hoursWorked: 96,
-    equipmentUsed: ['Excavator', 'Dump Truck', 'Kubota Tractor'],
-    acresCompleted: 8.5,
-    safetyIncidents: 0,
-    notes: 'Completed section A of the wicking bed installation. Weather conditions were favorable. Team productivity was high.',
-    delays: report.delays > 0 ? ['Heavy equipment delivery delayed by 2 hours'] : [],
-    completed: ['Installed 250ft of drainage pipe', 'Completed soil preparation for zone 3', 'Equipment maintenance completed']
-  };
 
   const downloadPDF = (e: React.MouseEvent) => {
     e.stopPropagation();
     window.open(`/api/reports/daily?${dailyReportQuery()}`, '_blank');
   };
+
+  const errorHint = weatherState.status === 'error'
+    ? weatherState.hasProjectLocation
+      ? 'Weather could not be loaded for this date or location (Open-Meteo).'
+      : 'Add a zip code or city/state on the project to show weather.'
+    : '';
 
   return (
     <div 
@@ -134,14 +160,59 @@ export function ReportCard({ report }: ReportCardProps) {
               </h3>
               <p className="text-xs text-gray-500">{report.timestamp}</p>
 
-              <div className="flex items-center gap-3 mt-3">
-                <div className="flex items-center gap-1.5 text-sm text-gray-700 bg-white border border-gray-200 px-2 py-1 rounded">
-                  <WeatherIcon className="w-4 h-4 text-[#2196F3]" />
-                  <span>
-                    {weatherUnavailable ? '—/—°F' : `${displayWeather.high}°/${displayWeather.low}°F`}
-                  </span>
+              {/* Matches daily report HTML: Weather — date + HIGH / LOW / SKY grid */}
+              <div className="mt-3 border border-[#ddd] rounded overflow-hidden bg-white text-left">
+                <div className="bg-[#FF6633] text-white text-[13px] font-bold uppercase tracking-wide px-4 py-2">
+                  Weather — {dateYmd}
                 </div>
+                {weatherState.status === 'error' ? (
+                  <div className="px-5 py-3 text-[13px] text-gray-600 border-t border-[#ddd]">
+                    {errorHint}
+                  </div>
+                ) : (
+                  <div className="flex border-t border-[#ddd]">
+                    <div className="flex-1 text-center px-2 py-4 border-r border-[#ddd] min-w-0">
+                      <div className="text-[11px] font-bold uppercase text-gray-600 mb-1">High</div>
+                      <div className="text-[28px] font-bold text-[#222] my-2 tabular-nums">
+                        {weatherState.status === 'ok' ? `${weatherState.high}°` : '—'}
+                      </div>
+                      <div className="text-[13px] font-bold text-[#222] mb-2">°F</div>
+                      <div className="text-[10px] text-[#666] leading-snug">Daytime high</div>
+                    </div>
+                    <div className="flex-1 text-center px-2 py-4 border-r border-[#ddd] min-w-0">
+                      <div className="text-[11px] font-bold uppercase text-gray-600 mb-1">Low</div>
+                      <div className="text-[28px] font-bold text-[#222] my-2 tabular-nums">
+                        {weatherState.status === 'ok' ? `${weatherState.low}°` : '—'}
+                      </div>
+                      <div className="text-[13px] font-bold text-[#222] mb-2">°F</div>
+                      <div className="text-[10px] text-[#666] leading-snug">Daily low</div>
+                    </div>
+                    <div className="flex-1 text-center px-2 py-4 min-w-0">
+                      <div className="text-[11px] font-bold uppercase text-gray-600 mb-1">Sky</div>
+                      <div
+                        className="text-[20px] font-bold text-[#222] my-2 leading-tight px-1"
+                        title={weatherState.status === 'ok' ? weatherState.label : undefined}
+                      >
+                        {weatherState.status === 'ok' ? weatherState.label : '—'}
+                      </div>
+                      <div className="text-[13px] font-bold text-[#222] mb-2">Conditions</div>
+                      <div className="text-[10px] text-[#666] leading-snug min-h-[15px]">
+                        {weatherState.status === 'ok'
+                          ? skyDetailLine(weatherState.precipInches, weatherState.windMph)
+                          : ''}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {weatherState.status === 'ok' && (
+                  <p className="text-[10px] text-[#999] px-4 py-2 border-t border-[#eee] m-0">
+                    Open-Meteo · Project area (
+                    {weatherState.hasProjectLocation ? 'zip or city from project record' : 'location unknown'})
+                  </p>
+                )}
+              </div>
 
+              <div className="flex items-center gap-3 mt-3 flex-wrap">
                 {report.delays > 0 && (
                   <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-[#FFF8E1] text-[#FFC107] border border-[#FFC107]/20">
                     <AlertCircle className="w-3 h-3" />
