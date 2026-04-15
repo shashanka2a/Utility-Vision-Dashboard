@@ -1,9 +1,17 @@
 "use client";
 
-import { FileDown, CloudRain, Cloud, Sun, ChevronDown, Calendar, MapPin, Users, Clock, AlertCircle, CheckCircle } from "lucide-react";
-import Image from "next/image";
+import { FileDown, ChevronDown, Calendar, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { isUuidLike } from "@/lib/is-uuid";
+
+const WEATHER_HEADER_ORANGE = "#FF6B35";
+
+function formatPrecipInches(n: number | null | undefined): string {
+  if (n == null || !Number.isFinite(n)) return "—";
+  if (n === 0) return "0";
+  const s = n.toFixed(2).replace(/\.?0+$/, "");
+  return s || "0";
+}
 
 interface Report {
   id: string;
@@ -40,38 +48,77 @@ function buildDailyReportParams(report: Report): URLSearchParams {
   return params;
 }
 
+type LiveWeatherDetail = {
+  high: number;
+  low: number;
+  condition: "sunny" | "rainy" | "cloudy";
+  label: string;
+  precipInches: number | null;
+  windMph: number | null;
+};
+
 export function ReportCard({ report }: ReportCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [liveWeather, setLiveWeather] = useState<{
-    high: number;
-    low: number;
-    condition: 'sunny' | 'rainy' | 'cloudy';
-  } | null>(null);
-  /** True after fetch when API had no numeric hi/lo (or request failed). */
-  const [weatherUnavailable, setWeatherUnavailable] = useState(false);
+  const [liveWeather, setLiveWeather] = useState<LiveWeatherDetail | null>(null);
+  const [weatherLoading, setWeatherLoading] = useState(true);
+  const [attributionLocation, setAttributionLocation] = useState<string | null>(null);
 
   useEffect(() => {
     const params = buildDailyReportParams(report);
     setLiveWeather(null);
-    setWeatherUnavailable(false);
+    setWeatherLoading(true);
+    setAttributionLocation(null);
 
     let cancelled = false;
     fetch(`/api/weather/day?${params.toString()}`)
       .then((r) => r.json())
-      .then((data: { high?: number | null; low?: number | null; condition?: string }) => {
-        if (cancelled) return;
-        if (typeof data.high === 'number' && typeof data.low === 'number' && data.condition) {
-          const c = data.condition;
-          if (c === 'sunny' || c === 'rainy' || c === 'cloudy') {
-            setLiveWeather({ high: data.high, low: data.low, condition: c });
-            setWeatherUnavailable(false);
-            return;
+      .then(
+        (data: {
+          high?: number | null;
+          low?: number | null;
+          condition?: string;
+          label?: string | null;
+          precipInches?: number | null;
+          windMph?: number | null;
+          locationLabel?: string | null;
+        }) => {
+          if (cancelled) return;
+          if (typeof data.locationLabel === "string" && data.locationLabel.trim()) {
+            setAttributionLocation(data.locationLabel.trim());
           }
+          if (
+            typeof data.high === "number" &&
+            typeof data.low === "number" &&
+            data.condition &&
+            typeof data.label === "string"
+          ) {
+            const c = data.condition;
+            if (c === "sunny" || c === "rainy" || c === "cloudy") {
+              setLiveWeather({
+                high: data.high,
+                low: data.low,
+                condition: c,
+                label: data.label,
+                precipInches:
+                  typeof data.precipInches === "number" && Number.isFinite(data.precipInches)
+                    ? data.precipInches
+                    : null,
+                windMph:
+                  typeof data.windMph === "number" && Number.isFinite(data.windMph)
+                    ? data.windMph
+                    : null,
+              });
+              setWeatherLoading(false);
+              return;
+            }
+          }
+          setWeatherLoading(false);
         }
-        setWeatherUnavailable(true);
-      })
+      )
       .catch(() => {
-        if (!cancelled) setWeatherUnavailable(true);
+        if (!cancelled) {
+          setWeatherLoading(false);
+        }
       });
 
     return () => {
@@ -79,29 +126,7 @@ export function ReportCard({ report }: ReportCardProps) {
     };
   }, [report.date, report.projectId, report.projectName]);
 
-  const displayWeather = liveWeather ?? report.weather;
-  const WeatherIcon =
-    weatherUnavailable && !liveWeather
-      ? Cloud
-      : displayWeather.condition === 'rainy'
-        ? CloudRain
-        : displayWeather.condition === 'sunny'
-          ? Sun
-          : Cloud;
-
   const dailyReportQuery = () => buildDailyReportParams(report).toString();
-
-  // Mock detailed data for PDF preview
-  const detailedReport = {
-    workers: 12,
-    hoursWorked: 96,
-    equipmentUsed: ['Excavator', 'Dump Truck', 'Kubota Tractor'],
-    acresCompleted: 8.5,
-    safetyIncidents: 0,
-    notes: 'Completed section A of the wicking bed installation. Weather conditions were favorable. Team productivity was high.',
-    delays: report.delays > 0 ? ['Heavy equipment delivery delayed by 2 hours'] : [],
-    completed: ['Installed 250ft of drainage pipe', 'Completed soil preparation for zone 3', 'Equipment maintenance completed']
-  };
 
   const downloadPDF = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -134,14 +159,7 @@ export function ReportCard({ report }: ReportCardProps) {
               </h3>
               <p className="text-xs text-gray-500">{report.timestamp}</p>
 
-              <div className="flex items-center gap-3 mt-3">
-                <div className="flex items-center gap-1.5 text-sm text-gray-700 bg-white border border-gray-200 px-2 py-1 rounded">
-                  <WeatherIcon className="w-4 h-4 text-[#2196F3]" />
-                  <span>
-                    {weatherUnavailable ? '—/—°F' : `${displayWeather.high}°/${displayWeather.low}°F`}
-                  </span>
-                </div>
-
+              <div className="flex flex-wrap items-center gap-2 mt-3">
                 {report.delays > 0 && (
                   <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-[#FFF8E1] text-[#FFC107] border border-[#FFC107]/20">
                     <AlertCircle className="w-3 h-3" />
@@ -154,6 +172,69 @@ export function ReportCard({ report }: ReportCardProps) {
                     {report.photos.length} {report.photos.length === 1 ? 'photo' : 'photos'}
                   </span>
                 )}
+              </div>
+
+              <div
+                className="mt-3 border border-gray-200 rounded overflow-hidden bg-white text-left"
+                aria-busy={weatherLoading}
+              >
+                <div
+                  className="px-3 py-2 text-white text-sm font-bold tracking-wide uppercase text-left"
+                  style={{ backgroundColor: WEATHER_HEADER_ORANGE }}
+                >
+                  Weather
+                </div>
+                <div className="grid grid-cols-3 divide-x divide-gray-200">
+                  <div className="py-4 px-2 flex flex-col items-center text-center min-h-[148px]">
+                    <span className="text-xs font-bold text-gray-600 uppercase tracking-wide">High</span>
+                    {weatherLoading ? (
+                      <div className="mt-3 h-10 w-14 bg-gray-200 rounded animate-pulse" aria-hidden />
+                    ) : (
+                      <>
+                        <span className="text-3xl font-bold text-black mt-2 tabular-nums leading-none">
+                          {liveWeather ? `${liveWeather.high}°` : '—'}
+                        </span>
+                        <span className="text-sm text-gray-600 mt-0.5">°F</span>
+                      </>
+                    )}
+                    <span className="text-xs text-gray-500 mt-auto pt-3">Daytime high</span>
+                  </div>
+                  <div className="py-4 px-2 flex flex-col items-center text-center min-h-[148px]">
+                    <span className="text-xs font-bold text-gray-600 uppercase tracking-wide">Low</span>
+                    {weatherLoading ? (
+                      <div className="mt-3 h-10 w-14 bg-gray-200 rounded animate-pulse" aria-hidden />
+                    ) : (
+                      <>
+                        <span className="text-3xl font-bold text-black mt-2 tabular-nums leading-none">
+                          {liveWeather ? `${liveWeather.low}°` : '—'}
+                        </span>
+                        <span className="text-sm text-gray-600 mt-0.5">°F</span>
+                      </>
+                    )}
+                    <span className="text-xs text-gray-500 mt-auto pt-3">Daily low</span>
+                  </div>
+                  <div className="py-4 px-2 flex flex-col items-center text-center min-h-[148px]">
+                    <span className="text-xs font-bold text-gray-600 uppercase tracking-wide">Sky</span>
+                    {weatherLoading ? (
+                      <div className="mt-3 h-20 w-full max-w-[130px] bg-gray-200 rounded animate-pulse mx-auto" aria-hidden />
+                    ) : (
+                      <>
+                        <span className="text-lg font-bold text-black mt-2 leading-tight px-1">
+                          {liveWeather ? liveWeather.label : '—'}
+                        </span>
+                        <span className="text-sm font-bold text-black mt-1">Conditions</span>
+                        <p className="text-xs text-gray-500 mt-2 leading-snug px-1">
+                          Precip {liveWeather ? formatPrecipInches(liveWeather.precipInches) : '—'} in · Wind max{' '}
+                          {liveWeather?.windMph != null ? `${liveWeather.windMph}` : '—'} mph
+                        </p>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <p className="text-xs text-gray-400 px-3 py-2 border-t border-gray-100 text-left">
+                  Open-Meteo
+                  {attributionLocation ? ` · ${attributionLocation}` : ''}
+                </p>
               </div>
             </div>
           </div>

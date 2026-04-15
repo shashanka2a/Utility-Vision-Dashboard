@@ -4,6 +4,13 @@ import { resolveProjectRow } from '@/lib/resolve-project';
 import { fetchDayWeatherForReport, wmoToCardCondition } from '@/lib/weather-report';
 import { isUuidLike } from '@/lib/is-uuid';
 
+function locationLabelForWeather(row: { zip_code?: string | null; city?: string | null; state?: string | null }): string {
+  const z = row.zip_code?.trim();
+  if (z) return z;
+  const cs = [row.city?.trim(), row.state?.trim()].filter(Boolean).join(', ');
+  return cs || 'Unknown';
+}
+
 /**
  * GET /api/weather/day?date=YYYY-MM-DD&project_id=uuid
  * GET /api/weather/day?date=YYYY-MM-DD&project=Project+Name
@@ -30,10 +37,21 @@ export async function GET(request: Request) {
 
   if (!projectRow?.id) {
     return NextResponse.json(
-      { high: null, low: null, condition: 'cloudy' as const, label: null, error: 'project_not_found' },
+      {
+        high: null,
+        low: null,
+        condition: 'cloudy' as const,
+        label: null,
+        precipInches: null,
+        windMph: null,
+        locationLabel: null,
+        error: 'project_not_found',
+      },
       { status: 200 }
     );
   }
+
+  const loc = locationLabelForWeather(projectRow);
 
   const w = await fetchDayWeatherForReport(projectRow, date);
   if (!w) {
@@ -42,6 +60,9 @@ export async function GET(request: Request) {
       low: null,
       condition: 'cloudy' as const,
       label: null,
+      precipInches: null,
+      windMph: null,
+      locationLabel: loc,
       error: 'weather_unavailable',
     });
   }
@@ -51,5 +72,8 @@ export async function GET(request: Request) {
     low: w.lowF,
     condition: wmoToCardCondition(w.wmoCode),
     label: w.conditionLabel,
+    precipInches: w.precipInches,
+    windMph: w.windMph,
+    locationLabel: loc,
   });
 }
