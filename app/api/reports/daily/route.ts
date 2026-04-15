@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
 import { resolveProjectRow } from '@/lib/resolve-project';
+import { isUuidLike } from '@/lib/is-uuid';
 
 function safeRows<T>(res: { data: T | null; error: { message: string } | null }): T {
   if (res.error) {
@@ -305,8 +306,12 @@ const REPORT_CSS = `
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const dateParam = searchParams.get('date');
-  const projectParam = searchParams.get('project');
-  const projectIdParam = searchParams.get('project_id');
+  let projectParam = searchParams.get('project');
+  let projectIdParam = searchParams.get('project_id');
+  if (!projectIdParam && projectParam && isUuidLike(projectParam)) {
+    projectIdParam = projectParam.trim();
+    projectParam = null;
+  }
 
   if (!dateParam || ((!projectParam || projectParam === 'All Projects') && !projectIdParam)) {
     return new NextResponse('Please select a specific project and date to generate a daily report.', { status: 400 });

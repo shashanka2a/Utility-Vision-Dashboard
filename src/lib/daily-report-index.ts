@@ -1,4 +1,5 @@
 import { supabaseServer } from '@/lib/supabase-server';
+import { isUuidLike } from '@/lib/is-uuid';
 
 export type DailyReportListItem = {
   id: string;
@@ -46,6 +47,12 @@ export async function getDailyReportListItems(): Promise<DailyReportListItem[]> 
     let pid = projectId;
     let display = (rawName || '').trim();
 
+    // `activities.project_name` (or bad rows) sometimes stores a UUID instead of a human name
+    if (!pid && display && isUuidLike(display)) {
+      pid = display;
+      display = '';
+    }
+
     if (pid && idToName[pid]) {
       display = idToName[pid];
     } else if (!pid && display) {
@@ -56,6 +63,11 @@ export async function getDailyReportListItems(): Promise<DailyReportListItem[]> 
       }
     } else if (pid && !display) {
       display = idToName[pid] || '';
+    }
+
+    // Prefer showing a short id label over leaking raw UUID as the card title
+    if (pid && !display) {
+      display = `Project ${pid.slice(0, 8)}…`;
     }
 
     if (!dateStr || !display) return;

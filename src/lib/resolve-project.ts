@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { isUuidLike } from '@/lib/is-uuid';
 
 export type ProjectRow = {
   id: string;
@@ -11,6 +12,21 @@ function norm(s: string): string {
   return s.trim().replace(/\s+/g, ' ').toLowerCase();
 }
 
+async function fetchProjectById(
+  supabase: SupabaseClient,
+  id: string
+): Promise<{ row: ProjectRow | null; error: string | null }> {
+  if (!isUuidLike(id)) return { row: null, error: null };
+  const { data, error } = await supabase
+    .from('projects')
+    .select('id, name, location, job_number')
+    .eq('id', id.trim())
+    .maybeSingle();
+  if (error) return { row: null, error: error.message };
+  if (data?.id) return { row: data as ProjectRow, error: null };
+  return { row: null, error: null };
+}
+
 /**
  * Resolve a project row by UUID, or by display name with tolerant matching
  * (normalization, substring, light token overlap). Uses one `projects` select.
@@ -19,20 +35,28 @@ export async function resolveProjectRow(
   supabase: SupabaseClient,
   opts: { projectId?: string | null; projectName?: string | null }
 ): Promise<{ row: ProjectRow | null; error: string | null }> {
-  const { projectId, projectName } = opts;
+  let { projectId, projectName } = opts;
 
-  if (projectId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(projectId)) {
-    const { data, error } = await supabase
-      .from('projects')
-      .select('id, name, location, job_number')
-      .eq('id', projectId)
-      .maybeSingle();
-    if (error) return { row: null, error: error.message };
-    if (data?.id) return { row: data as ProjectRow, error: null };
+  // Some clients mistakenly send UUID in `project` instead of `project_id`
+  const nameTrim = projectName?.trim();
+  if (!projectId && nameTrim && isUuidLike(nameTrim)) {
+    projectId = nameTrim;
+    projectName = null;
+  }
+
+  if (projectId) {
+    const byId = await fetchProjectById(supabase, projectId);
+    if (byId.error) return { row: null, error: byId.error };
+    if (byId.row) return { row: byId.row, error: null };
   }
 
   const q = projectName?.trim();
   if (!q) return { row: null, error: null };
+
+  // `project` param is literally a UUID string → resolve by id (already tried) or fail
+  if (isUuidLike(q)) {
+    return fetchProjectById(supabase, q);
+  }
 
   const { data: all, error } = await supabase.from('projects').select('id, name, location, job_number');
   if (error) return { row: null, error: error.message };

@@ -6,7 +6,7 @@ import {
   Briefcase
 } from "lucide-react";
 import { useProject } from "@/context/ProjectContext";
-import { format, addDays, subDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths } from "date-fns";
+import { format, addDays, subDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isFuture, startOfDay } from "date-fns";
 import { useState, useRef, useEffect } from "react";
 import { useSearchParams, usePathname } from "next/navigation";
 
@@ -20,8 +20,9 @@ function CalendarDropdown({
   projectName: string;
 }) {
   const [currentMonth, setCurrentMonth] = useState(startOfMonth(selectedDate));
-  const [daysWithData, setDaysWithData] = useState<Set<string>>(new Set());
-  
+  const [loggedDates, setLoggedDates] = useState<Set<string>>(new Set());
+  const [signedDates, setSignedDates] = useState<Set<string>>(new Set());
+
   const days = eachDayOfInterval({
     start: startOfWeek(startOfMonth(currentMonth)),
     end: endOfWeek(endOfMonth(currentMonth))
@@ -33,19 +34,30 @@ function CalendarDropdown({
       try {
         const params = new URLSearchParams();
         if (projectName && projectName !== "All Projects") params.set("project", projectName);
-        const res = await fetch(`/api/reports?${params.toString()}`);
+        const res = await fetch(`/api/reports/calendar?${params.toString()}`);
         const data = await res.json();
-        if (!res.ok || !Array.isArray(data)) {
-          if (!cancelled) setDaysWithData(new Set());
+        if (!res.ok || !data) {
+          if (!cancelled) {
+            setLoggedDates(new Set());
+            setSignedDates(new Set());
+          }
           return;
         }
-        const set = new Set<string>();
-        for (const r of data) {
-          if (r?.date) set.add(String(r.date).slice(0, 10));
+        const logged = new Set<string>(
+          Array.isArray(data.loggedDates) ? data.loggedDates.map((d: string) => String(d).slice(0, 10)) : []
+        );
+        const signed = new Set<string>(
+          Array.isArray(data.signedDates) ? data.signedDates.map((d: string) => String(d).slice(0, 10)) : []
+        );
+        if (!cancelled) {
+          setLoggedDates(logged);
+          setSignedDates(signed);
         }
-        if (!cancelled) setDaysWithData(set);
       } catch {
-        if (!cancelled) setDaysWithData(new Set());
+        if (!cancelled) {
+          setLoggedDates(new Set());
+          setSignedDates(new Set());
+        }
       }
     }
     load();
@@ -56,10 +68,37 @@ function CalendarDropdown({
 
   const getStatusIndicator = (day: Date) => {
     const dayStr = format(day, "yyyy-MM-dd");
-    if (daysWithData.has(dayStr)) {
-      return <div className="w-1.5 h-1.5 rounded-full bg-green-500 mx-auto mt-0.5" />;
+    if (!projectName || projectName === "All Projects") {
+      return <div className="h-2 w-2 mt-0.5" aria-hidden />;
     }
-    return <div className="h-2 w-2 mt-0.5" />;
+    if (isFuture(startOfDay(day))) {
+      return <div className="h-2 w-2 mt-0.5" aria-hidden />;
+    }
+    if (signedDates.has(dayStr)) {
+      return (
+        <div
+          className="w-1.5 h-1.5 rounded-full bg-green-500 mx-auto mt-0.5"
+          title="Signed report"
+          aria-label="Signed report"
+        />
+      );
+    }
+    if (loggedDates.has(dayStr)) {
+      return (
+        <div
+          className="w-2.5 h-[3px] rounded-full bg-yellow-400 mx-auto mt-0.5"
+          title="Data logged — report unsigned"
+          aria-label="Data logged, unsigned report"
+        />
+      );
+    }
+    return (
+      <span className="mx-auto mt-0.5 inline-flex" title="No data logged" role="img" aria-label="No data logged">
+        <svg viewBox="0 0 24 24" fill="currentColor" className="w-[8px] h-[8px] text-red-500">
+          <path d="M12 2L22 20H2L12 2Z" />
+        </svg>
+      </span>
+    );
   };
 
   return (

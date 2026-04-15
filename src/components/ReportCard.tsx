@@ -3,6 +3,7 @@
 import { FileDown, CloudRain, Cloud, Sun, ChevronDown, Calendar, MapPin, Users, Clock, AlertCircle, CheckCircle } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
+import { isUuidLike } from "@/lib/is-uuid";
 
 interface Report {
   id: string;
@@ -32,7 +33,8 @@ export function ReportCard({ report }: ReportCardProps) {
   const dailyReportQuery = () => {
     const params = new URLSearchParams();
     params.set('date', report.date || new Date().toISOString().split('T')[0]);
-    if (report.projectId) params.set('project_id', report.projectId);
+    const id = report.projectId || (isUuidLike(report.projectName) ? report.projectName : null);
+    if (id) params.set('project_id', id.trim());
     else params.set('project', report.projectName);
     return params.toString();
   };
