@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import { getDailyReportListItems } from '@/lib/daily-report-index';
 
+function normName(s: string): string {
+  return s.trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -9,7 +13,7 @@ export async function GET(request: Request) {
     const formattedData = await getDailyReportListItems();
     const filtered =
       project && project !== 'All Projects'
-        ? formattedData.filter((r) => r.projectName === project)
+        ? formattedData.filter((r) => normName(r.projectName) === normName(project))
         : formattedData;
 
     return NextResponse.json(filtered);

@@ -25,6 +25,25 @@ function normName(s: string): string {
 type EntryValue = { date: string; projectId: string | null; projectName: string };
 
 /**
+ * If the title matches a real project name, use that project's id — activities (and other)
+ * sources can attach a wrong `projectId` while the display name is still correct.
+ */
+function canonicalizeEntry(
+  e: EntryValue,
+  nameToCanonical: Map<string, { id: string; name: string }>,
+  idToName: Record<string, string>
+): EntryValue {
+  const byName = nameToCanonical.get(normName(e.projectName));
+  if (byName) {
+    return { date: e.date, projectId: byName.id, projectName: byName.name };
+  }
+  if (e.projectId && idToName[e.projectId]) {
+    return { date: e.date, projectId: e.projectId, projectName: idToName[e.projectId] };
+  }
+  return e;
+}
+
+/**
  * One entry per (calendar day in UTC, project) where any field module logged data.
  * Used by the Reports screen and GET /api/reports.
  */
@@ -127,7 +146,15 @@ export async function getDailyReportListItems(): Promise<DailyReportListItem[]> 
     addFromActivities((actRes.data as { created_at?: string; project_name?: string }[]) || []);
   }
 
-  const items: DailyReportListItem[] = Array.from(entryMap.values()).map((e) => {
+  /** Merge rows that pointed at different ids but the same canonical project name */
+  const deduped = new Map<string, EntryValue>();
+  for (const e of entryMap.values()) {
+    const c = canonicalizeEntry(e, nameToCanonical, idToName);
+    const key = c.projectId ? `${c.date}|id:${c.projectId}` : `${c.date}|n:${normName(c.projectName)}`;
+    if (!deduped.has(key)) deduped.set(key, c);
+  }
+
+  const items: DailyReportListItem[] = Array.from(deduped.values()).map((e) => {
     const slug = (e.projectId || e.projectName).toString().replace(/\s+/g, '_');
     const id = `${e.date}_${slug}`;
     const timestamp = new Date(`${e.date}T12:00:00.000Z`).toLocaleDateString('en-US', {

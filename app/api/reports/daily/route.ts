@@ -328,8 +328,12 @@ export async function GET(request: Request) {
 
   if (!projectRow?.id) {
     const label = projectParam || projectIdParam || 'Unknown';
+    const hint =
+      projectIdParam && !projectParam
+        ? 'No project with this id exists in the database.'
+        : 'No project matched this name in the database.';
     return new NextResponse(
-      `<div style="padding:40px;font-family:sans-serif"><h2>Project not found</h2><p>No project named <b>${escapeHtml(String(label))}</b>.</p></div>`,
+      `<div style="padding:40px;font-family:sans-serif"><h2>Project not found</h2><p>${hint}</p><p><b>${escapeHtml(String(label))}</b></p></div>`,
       { status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' } }
     );
   }

@@ -33,9 +33,16 @@ export function ReportCard({ report }: ReportCardProps) {
   const dailyReportQuery = () => {
     const params = new URLSearchParams();
     params.set('date', report.date || new Date().toISOString().split('T')[0]);
-    const id = report.projectId || (isUuidLike(report.projectName) ? report.projectName : null);
+    const name = (report.projectName || '').trim();
+    // Prefer lookup by display name when it is a real project title — `projectId` from the list
+    // can be a stale/wrong UUID from activities while the title matches `projects.name`.
+    if (name && !isUuidLike(name) && !/^Project [0-9a-f]{8}/i.test(name)) {
+      params.set('project', name);
+      return params.toString();
+    }
+    const id = report.projectId || (isUuidLike(name) ? name : null);
     if (id) params.set('project_id', id.trim());
-    else params.set('project', report.projectName);
+    else if (name) params.set('project', name);
     return params.toString();
   };
 
