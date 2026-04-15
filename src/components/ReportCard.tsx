@@ -2,7 +2,7 @@
 
 import { FileDown, CloudRain, Cloud, Sun, ChevronDown, Calendar, MapPin, Users, Clock, AlertCircle, CheckCircle } from "lucide-react";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { isUuidLike } from "@/lib/is-uuid";
 
 interface Report {
@@ -25,26 +25,71 @@ interface ReportCardProps {
   report: Report;
 }
 
+/** Same project/date resolution as `/api/reports/daily` (iframe + PDF). */
+function buildDailyReportParams(report: Report): URLSearchParams {
+  const params = new URLSearchParams();
+  params.set('date', report.date || new Date().toISOString().split('T')[0]);
+  const name = (report.projectName || '').trim();
+  if (name && !isUuidLike(name) && !/^Project [0-9a-f]{8}/i.test(name)) {
+    params.set('project', name);
+    return params;
+  }
+  const id = report.projectId || (isUuidLike(name) ? name : null);
+  if (id) params.set('project_id', id.trim());
+  else if (name) params.set('project', name);
+  return params;
+}
+
 export function ReportCard({ report }: ReportCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const WeatherIcon = report.weather.condition === 'rainy' ? CloudRain : 
-                      report.weather.condition === 'sunny' ? Sun : Cloud;
+  const [liveWeather, setLiveWeather] = useState<{
+    high: number;
+    low: number;
+    condition: 'sunny' | 'rainy' | 'cloudy';
+  } | null>(null);
+  /** True after fetch when API had no numeric hi/lo (or request failed). */
+  const [weatherUnavailable, setWeatherUnavailable] = useState(false);
 
-  const dailyReportQuery = () => {
-    const params = new URLSearchParams();
-    params.set('date', report.date || new Date().toISOString().split('T')[0]);
-    const name = (report.projectName || '').trim();
-    // Prefer lookup by display name when it is a real project title — `projectId` from the list
-    // can be a stale/wrong UUID from activities while the title matches `projects.name`.
-    if (name && !isUuidLike(name) && !/^Project [0-9a-f]{8}/i.test(name)) {
-      params.set('project', name);
-      return params.toString();
-    }
-    const id = report.projectId || (isUuidLike(name) ? name : null);
-    if (id) params.set('project_id', id.trim());
-    else if (name) params.set('project', name);
-    return params.toString();
-  };
+  useEffect(() => {
+    const params = buildDailyReportParams(report);
+    setLiveWeather(null);
+    setWeatherUnavailable(false);
+
+    let cancelled = false;
+    fetch(`/api/weather/day?${params.toString()}`)
+      .then((r) => r.json())
+      .then((data: { high?: number | null; low?: number | null; condition?: string }) => {
+        if (cancelled) return;
+        if (typeof data.high === 'number' && typeof data.low === 'number' && data.condition) {
+          const c = data.condition;
+          if (c === 'sunny' || c === 'rainy' || c === 'cloudy') {
+            setLiveWeather({ high: data.high, low: data.low, condition: c });
+            setWeatherUnavailable(false);
+            return;
+          }
+        }
+        setWeatherUnavailable(true);
+      })
+      .catch(() => {
+        if (!cancelled) setWeatherUnavailable(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [report.date, report.projectId, report.projectName]);
+
+  const displayWeather = liveWeather ?? report.weather;
+  const WeatherIcon =
+    weatherUnavailable && !liveWeather
+      ? Cloud
+      : displayWeather.condition === 'rainy'
+        ? CloudRain
+        : displayWeather.condition === 'sunny'
+          ? Sun
+          : Cloud;
+
+  const dailyReportQuery = () => buildDailyReportParams(report).toString();
 
   // Mock detailed data for PDF preview
   const detailedReport = {
@@ -92,7 +137,9 @@ export function ReportCard({ report }: ReportCardProps) {
               <div className="flex items-center gap-3 mt-3">
                 <div className="flex items-center gap-1.5 text-sm text-gray-700 bg-white border border-gray-200 px-2 py-1 rounded">
                   <WeatherIcon className="w-4 h-4 text-[#2196F3]" />
-                  <span>{report.weather.high}°/{report.weather.low}°F</span>
+                  <span>
+                    {weatherUnavailable ? '—/—°F' : `${displayWeather.high}°/${displayWeather.low}°F`}
+                  </span>
                 </div>
 
                 {report.delays > 0 && (
