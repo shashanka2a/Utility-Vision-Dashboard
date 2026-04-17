@@ -11,7 +11,7 @@ import {
   ClipboardList, PenTool, AlertCircle, Eye,
   Activity, Image as GalleryIcon, FileSpreadsheet,
   MessageSquare, Clipboard, Users, Settings,
-  Calendar, Compass, LayoutDashboard, Package
+  Calendar, Compass, LayoutDashboard
 } from "lucide-react";
 
 function ProjectDashboardContent() {
@@ -58,8 +58,6 @@ function ProjectDashboardContent() {
       return <ProjectDetailScreen title="Metrics" icon={Calendar} dataType="metrics" />;
     case "chemicals":
       return <ProjectDetailScreen title="Chemicals" icon={Activity} dataType="chemicals" />;
-    case "inventory":
-      return <ProjectDetailScreen title="Inventory" icon={Package} dataType="inventory" />;
     case "notes":
       return <ProjectDetailScreen title="Notes" icon={MessageSquare} dataType="notes" />;
     case "attachments":
