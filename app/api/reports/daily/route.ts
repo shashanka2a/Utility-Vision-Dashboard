@@ -250,7 +250,7 @@ const REPORT_CSS = `
 `;
 
 function buildWeatherSectionHtml(
-  dateYmd: string,
+  _dateYmd: string,
   weather: Awaited<ReturnType<typeof fetchDayWeatherForReport>>,
   projectRow: { zip_code?: string | null; city?: string | null; state?: string | null }
 ): string {
@@ -263,18 +263,16 @@ function buildWeatherSectionHtml(
     const detailLine = detailBits.length ? detailBits.join(' · ') : 'Daily summary';
 
     return `<div class="section-wrap">
-    <div class="section-header">Weather — ${escapeHtml(dateYmd)}</div>
+    <div class="section-header">Weather</div>
     <div class="weather-grid">
       <div class="weather-cell">
         <div class="time">High</div>
-        <div class="temp">${weather.highF}°</div>
-        <div class="cond">°F</div>
+        <div class="temp">${weather.highF}°F</div>
         <div class="info">Daytime high</div>
       </div>
       <div class="weather-cell">
         <div class="time">Low</div>
-        <div class="temp">${weather.lowF}°</div>
-        <div class="cond">°F</div>
+        <div class="temp">${weather.lowF}°F</div>
         <div class="info">Daily low</div>
       </div>
       <div class="weather-cell">
@@ -284,9 +282,6 @@ function buildWeatherSectionHtml(
         <div class="info">${escapeHtml(detailLine)}</div>
       </div>
     </div>
-    <p style="font-size:10px;color:#999;padding:8px 16px 14px;margin:0;border-top:1px solid #eee;">
-      Open-Meteo · Project area (${hasLoc ? 'zip or city from project record' : 'location unknown'})
-    </p>
   </div>`;
   }
 
