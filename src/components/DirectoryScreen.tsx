@@ -5,6 +5,7 @@ import {
   Mail, Phone, ArrowRight, Shield, User, MapPin, Briefcase
 } from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
+import { toast } from "sonner";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -139,6 +140,9 @@ export function DirectoryScreen({ projectFilter }: { projectFilter?: string }) {
   const [formData, setFormData] = useState<FormData>(emptyForm);
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [inviteLoadingId, setInviteLoadingId] = useState<string | null>(null);
+  /** Create flow: send password-setup email when saving (unless worker / no email). */
+  const [sendInviteOnCreate, setSendInviteOnCreate] = useState(true);
 
 
   // ── data loading ──────────────────────────────────────────────────────────
@@ -189,6 +193,7 @@ export function DirectoryScreen({ projectFilter }: { projectFilter?: string }) {
   const openAdd = () => {
     setEditingEmployee(null);
     setFormData(emptyForm);
+    setSendInviteOnCreate(true);
     setError(null);
     setIsModalOpen(true);
   };
@@ -230,6 +235,36 @@ export function DirectoryScreen({ projectFilter }: { projectFilter?: string }) {
 
   // ── CRUD ──────────────────────────────────────────────────────────────────
 
+  const handleSendLoginInvite = async (emp: Employee) => {
+    if (!emp.email?.trim()) {
+      toast.error('Add an email address for this employee first.');
+      return;
+    }
+    if (emp.role === 'worker') {
+      toast.error('Workers do not use login. Change the role to send an invite.');
+      return;
+    }
+    setMenuOpenId(null);
+    setInviteLoadingId(emp.id);
+    try {
+      const res = await fetch(`/api/employees/${emp.id}/invite`, { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(typeof data.error === 'string' ? data.error : 'Invite failed');
+      }
+      const flow = data.flow as string | undefined;
+      toast.success(
+        flow === 'recovery'
+          ? 'Password setup email sent (existing account).'
+          : 'Login invite email sent.'
+      );
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Invite failed');
+    } finally {
+      setInviteLoadingId(null);
+    }
+  };
+
   const handleDelete = async (emp: Employee) => {
     setMenuOpenId(null);
     if (!confirm(`Remove ${emp.name} from the team?`)) return;
@@ -259,14 +294,40 @@ export function DirectoryScreen({ projectFilter }: { projectFilter?: string }) {
         setEmployees(prev => prev.map(e => e.id === updated.id ? updated : e));
         closeModal();
       } else {
+        const wantsInvite =
+          sendInviteOnCreate &&
+          Boolean(formData.email?.trim()) &&
+          formData.role !== 'worker';
         const res = await fetch('/api/employees', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData),
+          body: JSON.stringify({
+            ...formData,
+            send_login_invite: wantsInvite,
+          }),
         });
         if (!res.ok) throw new Error('Create failed');
-        const created = await res.json();
-        setEmployees(prev => [...prev, created]);
+        const created = (await res.json()) as Employee & {
+          invite?:
+            | { sent: true; flow: 'invite' | 'recovery' }
+            | { sent: false; error: string };
+        };
+        const { invite, ...newEmployee } = created;
+
+        if (invite) {
+          if (invite.sent) {
+            toast.success(
+              invite.flow === 'recovery'
+                ? 'Employee added. Password email sent (existing account).'
+                : 'Employee added. Login invite sent — they can set a password and use the dashboard.'
+            );
+          } else {
+            toast.warning(`Employee saved, but invite was not sent: ${invite.error}`);
+          }
+        } else {
+          toast.success('Employee added.');
+        }
+        setEmployees(prev => [...prev, newEmployee]);
         closeModal();
       }
     } catch (e: unknown) {
@@ -285,6 +346,11 @@ export function DirectoryScreen({ projectFilter }: { projectFilter?: string }) {
   };
 
   const activeCount = employees.filter(e => e.status === 'active').length;
+
+  const inviteEligibleForCreate =
+    Boolean(formData.email?.trim()) &&
+    formData.role !== '' &&
+    formData.role !== 'worker';
 
   const filteredEmployees = employees.filter(e => {
     if (!searchQuery) return true;
@@ -447,6 +513,30 @@ export function DirectoryScreen({ projectFilter }: { projectFilter?: string }) {
                               >
                                 Edit
                               </button>
+                              <button
+                                type="button"
+                                disabled={
+                                  inviteLoadingId === emp.id ||
+                                  !emp.email?.trim() ||
+                                  emp.role === 'worker'
+                                }
+                                title={
+                                  !emp.email?.trim()
+                                    ? 'Add an email address first'
+                                    : emp.role === 'worker'
+                                      ? 'Workers do not use login'
+                                      : undefined
+                                }
+                                onClick={() => handleSendLoginInvite(emp)}
+                                className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2 disabled:opacity-40 disabled:pointer-events-none"
+                              >
+                                {inviteLoadingId === emp.id ? (
+                                  <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                                ) : (
+                                  <Mail className="w-4 h-4 shrink-0 text-gray-500" />
+                                )}
+                                Send login invite
+                              </button>
                               <div className="border-t border-gray-100 my-1" />
                               <button
                                 onClick={() => handleToggleStatus(emp)}
@@ -495,6 +585,30 @@ export function DirectoryScreen({ projectFilter }: { projectFilter?: string }) {
                               className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 font-medium"
                             >
                               Edit
+                            </button>
+                            <button
+                              type="button"
+                              disabled={
+                                inviteLoadingId === emp.id ||
+                                !emp.email?.trim() ||
+                                emp.role === 'worker'
+                              }
+                              title={
+                                !emp.email?.trim()
+                                  ? 'Add an email address first'
+                                  : emp.role === 'worker'
+                                    ? 'Workers do not use login'
+                                    : undefined
+                              }
+                              onClick={() => handleSendLoginInvite(emp)}
+                              className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 disabled:opacity-40 disabled:pointer-events-none"
+                            >
+                              {inviteLoadingId === emp.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                              ) : (
+                                <Mail className="w-4 h-4 shrink-0 text-gray-500" />
+                              )}
+                              Send login invite
                             </button>
                             <div className="border-t border-gray-100 my-1" />
                             <button
@@ -754,6 +868,38 @@ export function DirectoryScreen({ projectFilter }: { projectFilter?: string }) {
                     </div>
                   </div>
                 )}
+
+                {/* Login invite (new employees only) */}
+                {!editingEmployee && (
+                  <div className="rounded-lg border border-gray-200 bg-gray-50/90 p-4 space-y-2">
+                    <label
+                      className={`flex items-start gap-3 ${inviteEligibleForCreate ? 'cursor-pointer' : 'cursor-not-allowed'}`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={inviteEligibleForCreate && sendInviteOnCreate}
+                        disabled={!inviteEligibleForCreate}
+                        onChange={e => setSendInviteOnCreate(e.target.checked)}
+                        className="mt-1 w-4 h-4 text-[#FF6633] border-gray-300 rounded focus:ring-[#FF6633] disabled:opacity-40"
+                      />
+                      <span>
+                        <span className="block text-sm font-medium text-gray-800">
+                          Send login invite email
+                        </span>
+                        <span className="block text-xs text-gray-500 mt-0.5 leading-relaxed">
+                          They get a link to set their password, then they can sign in to the Utility Vision
+                          dashboard.
+                        </span>
+                      </span>
+                    </label>
+                    {!formData.email?.trim() && (
+                      <p className="text-xs text-amber-800 pl-7">Enter an email above to enable.</p>
+                    )}
+                    {formData.role === 'worker' && (
+                      <p className="text-xs text-gray-500 pl-7">Worker role has no dashboard login.</p>
+                    )}
+                  </div>
+                )}
               </div>
             </form>
 
@@ -774,7 +920,7 @@ export function DirectoryScreen({ projectFilter }: { projectFilter?: string }) {
                   className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[#FF6633] text-white rounded-lg text-sm font-medium hover:bg-[#E55A2B] transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-[#FF6633] focus:ring-offset-2 disabled:opacity-60"
                 >
                   {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-                  Save
+                  {editingEmployee ? 'Save' : 'Add employee'}
                 </button>
               </div>
             </div>
