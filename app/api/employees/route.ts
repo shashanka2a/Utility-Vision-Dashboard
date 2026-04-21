@@ -1,12 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
 import { deliverEmployeeLoginInvite } from '@/lib/employee-invite';
-
-function appUrlFromRequest(request: Request): string {
-  const env = process.env.NEXT_PUBLIC_APP_URL?.trim();
-  if (env) return env.replace(/\/$/, '');
-  return new URL(request.url).origin;
-}
+import { getPublicAppBaseUrl } from '@/lib/app-url';
 
 // GET /api/employees
 export async function GET() {
@@ -48,7 +43,7 @@ export async function POST(request: Request) {
         email: data.email,
         role: data.role,
       },
-      appUrlFromRequest(request)
+      getPublicAppBaseUrl(request)
     );
     if (inviteResult.ok) {
       invite = { sent: true, flow: inviteResult.flow };

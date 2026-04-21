@@ -1,12 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase-server';
 import { deliverEmployeeLoginInvite } from '@/lib/employee-invite';
-
-function appUrlFromRequest(request: Request): string {
-  const env = process.env.NEXT_PUBLIC_APP_URL?.trim();
-  if (env) return env.replace(/\/$/, '');
-  return new URL(request.url).origin;
-}
+import { getPublicAppBaseUrl } from '@/lib/app-url';
 
 // POST /api/employees/[id]/invite — email login invite via Gmail SMTP + Supabase Auth link
 export async function POST(
@@ -25,7 +20,7 @@ export async function POST(
     return NextResponse.json({ error: 'Employee not found.' }, { status: 404 });
   }
 
-  const result = await deliverEmployeeLoginInvite(employee, appUrlFromRequest(request));
+  const result = await deliverEmployeeLoginInvite(employee, getPublicAppBaseUrl(request));
 
   if (!result.ok) {
     const msg = result.error;
