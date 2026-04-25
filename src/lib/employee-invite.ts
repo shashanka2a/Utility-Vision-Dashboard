@@ -63,7 +63,8 @@ export async function deliverEmployeeLoginInvite(
     };
   }
 
-  const redirectTo = `${base}/login`;
+  // Always land in our callback which routes to signup/login based on flow.
+  const redirectTo = `${base}/auth/callback`;
   const userMeta = { full_name: employee.name, app_role: employee.role };
 
   const inviteRes = await supabaseServer.auth.admin.generateLink({
