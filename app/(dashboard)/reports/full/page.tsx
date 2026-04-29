@@ -30,15 +30,18 @@ function FullReportInner() {
     const iframe = iframeRef.current;
     const doc = iframe?.contentDocument;
     const body = doc?.body;
-    if (!body) {
+    if (!doc || !body) {
       setErr("Report is still loading. Wait a moment and try again.");
       return;
     }
 
+    // Export only the report sheet; capturing <body> includes preview chrome/whitespace.
+    const reportRoot = (doc.querySelector(".report-sheet") as HTMLElement | null) ?? body;
+
     setBusy(true);
     setErr(null);
     try {
-      await downloadElementAsMultiPagePdf(body, `daily-report-${fileBase}.pdf`);
+      await downloadElementAsMultiPagePdf(reportRoot, `daily-report-${fileBase}.pdf`);
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : "Could not generate PDF.");
     } finally {
