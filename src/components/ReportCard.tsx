@@ -1,9 +1,10 @@
 "use client";
 
-import { FileDown, CloudRain, Cloud, Sun, ChevronDown, Calendar, MapPin, Users, Clock, AlertCircle, CheckCircle } from "lucide-react";
+import { FileDown, CloudRain, Cloud, Sun, ChevronDown, Calendar, AlertCircle } from "lucide-react";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { isUuidLike } from "@/lib/is-uuid";
+import { downloadElementAsMultiPagePdf, sanitizePdfFileName } from "@/lib/daily-report-pdf";
 
 interface Report {
   id: string;
@@ -42,6 +43,7 @@ function buildDailyReportParams(report: Report): URLSearchParams {
 
 export function ReportCard({ report }: ReportCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [liveWeather, setLiveWeather] = useState<{
     high: number;
     low: number;
@@ -91,27 +93,64 @@ export function ReportCard({ report }: ReportCardProps) {
 
   const dailyReportQuery = () => buildDailyReportParams(report).toString();
 
-  // Mock detailed data for PDF preview
-  const detailedReport = {
-    workers: 12,
-    hoursWorked: 96,
-    equipmentUsed: ['Excavator', 'Dump Truck', 'Kubota Tractor'],
-    acresCompleted: 8.5,
-    safetyIncidents: 0,
-    notes: 'Completed section A of the wicking bed installation. Weather conditions were favorable. Team productivity was high.',
-    delays: report.delays > 0 ? ['Heavy equipment delivery delayed by 2 hours'] : [],
-    completed: ['Installed 250ft of drainage pipe', 'Completed soil preparation for zone 3', 'Equipment maintenance completed']
-  };
-
   const openFullReport = (opts?: { downloadPdf?: boolean }) => {
     const q = dailyReportQuery();
     const suffix = opts?.downloadPdf ? "&download=1" : "";
     window.open(`/reports/full?${q}${suffix}`, "_blank", "noopener,noreferrer");
   };
 
-  const onDownloadPdfClick = (e: React.MouseEvent) => {
+  const onDownloadPdfClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    openFullReport({ downloadPdf: true });
+    if (isDownloading) return;
+
+    setIsDownloading(true);
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.left = "-99999px";
+    iframe.style.top = "0";
+    iframe.style.width = "1px";
+    iframe.style.height = "1px";
+    iframe.style.opacity = "0";
+    iframe.setAttribute("aria-hidden", "true");
+
+    const q = dailyReportQuery();
+    const fileBase = sanitizePdfFileName(
+      `${report.date || "report"}-${report.projectId || report.projectName || "project"}`
+    );
+
+    try {
+      const loaded = new Promise<void>((resolve, reject) => {
+        const timeoutId = window.setTimeout(() => {
+          reject(new Error("Timed out while loading report for PDF export."));
+        }, 20000);
+
+        iframe.onload = () => {
+          window.clearTimeout(timeoutId);
+          resolve();
+        };
+
+        iframe.onerror = () => {
+          window.clearTimeout(timeoutId);
+          reject(new Error("Could not load report for PDF export."));
+        };
+      });
+
+      iframe.src = `/api/reports/daily?${q}`;
+      document.body.appendChild(iframe);
+      await loaded;
+
+      const doc = iframe.contentDocument;
+      const body = doc?.body;
+      if (!doc || !body) throw new Error("Report content is unavailable.");
+
+      const reportRoot = (doc.querySelector(".report-sheet") as HTMLElement | null) ?? body;
+      await downloadElementAsMultiPagePdf(reportRoot, `daily-report-${fileBase}.pdf`);
+    } catch (err) {
+      console.error("Daily report download failed:", err);
+    } finally {
+      iframe.remove();
+      setIsDownloading(false);
+    }
   };
 
   return (
@@ -169,8 +208,9 @@ export function ReportCard({ report }: ReportCardProps) {
         <div className="flex items-center gap-0.5 pr-3 flex-shrink-0 self-stretch">
           <button
             type="button"
-            onClick={onDownloadPdfClick}
-            className="p-2 hover:bg-[#FFEBEE] rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F44336]/40"
+            onClick={(e) => void onDownloadPdfClick(e)}
+            disabled={isDownloading}
+            className="p-2 hover:bg-[#FFEBEE] rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F44336]/40 disabled:opacity-50"
             aria-label="Download PDF report"
             title="Download PDF"
           >
@@ -217,11 +257,12 @@ export function ReportCard({ report }: ReportCardProps) {
             </button>
             <button
               type="button"
-              onClick={onDownloadPdfClick}
-              className="flex items-center gap-2 px-4 py-2 bg-[#F44336] text-white rounded-lg hover:bg-[#E53935] transition-colors text-sm font-medium focus:outline-none flex-shrink-0"
+              onClick={(e) => void onDownloadPdfClick(e)}
+              disabled={isDownloading}
+              className="flex items-center gap-2 px-4 py-2 bg-[#F44336] text-white rounded-lg hover:bg-[#E53935] transition-colors text-sm font-medium focus:outline-none flex-shrink-0 disabled:opacity-60"
             >
               <FileDown className="w-4 h-4" />
-              Download PDF
+              {isDownloading ? "Downloading..." : "Download PDF"}
             </button>
           </div>
         </div>
