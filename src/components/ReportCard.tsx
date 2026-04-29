@@ -25,7 +25,7 @@ interface ReportCardProps {
   report: Report;
 }
 
-/** Same project/date resolution as `/api/reports/daily` (iframe + PDF). */
+/** Same project/date resolution as `/api/reports/daily` (inline preview + `/reports/full` for PDF). */
 function buildDailyReportParams(report: Report): URLSearchParams {
   const params = new URLSearchParams();
   params.set('date', report.date || new Date().toISOString().split('T')[0]);
@@ -103,9 +103,15 @@ export function ReportCard({ report }: ReportCardProps) {
     completed: ['Installed 250ft of drainage pipe', 'Completed soil preparation for zone 3', 'Equipment maintenance completed']
   };
 
-  const downloadPDF = (e: React.MouseEvent) => {
+  const openFullReport = (opts?: { downloadPdf?: boolean }) => {
+    const q = dailyReportQuery();
+    const suffix = opts?.downloadPdf ? "&download=1" : "";
+    window.open(`/reports/full?${q}${suffix}`, "_blank", "noopener,noreferrer");
+  };
+
+  const onDownloadPdfClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    window.open(`/api/reports/daily?${dailyReportQuery()}`, '_blank');
+    openFullReport({ downloadPdf: true });
   };
 
   return (
@@ -163,7 +169,7 @@ export function ReportCard({ report }: ReportCardProps) {
         <div className="flex items-center gap-0.5 pr-3 flex-shrink-0 self-stretch">
           <button
             type="button"
-            onClick={downloadPDF}
+            onClick={onDownloadPdfClick}
             className="p-2 hover:bg-[#FFEBEE] rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F44336]/40"
             aria-label="Download PDF report"
             title="Download PDF"
@@ -198,13 +204,24 @@ export function ReportCard({ report }: ReportCardProps) {
              style={{ border: 'none' }}
              title="Daily Report Preview"
           />
-          <div className="pt-4 flex justify-end">
+          <div className="pt-4 flex flex-wrap justify-end gap-2">
             <button
-               onClick={downloadPDF}
-               className="flex items-center gap-2 px-4 py-2 bg-[#F44336] text-white rounded hover:bg-[#E53935] transition-colors text-sm font-medium focus:outline-none flex-shrink-0"
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                openFullReport();
+              }}
+              className="flex items-center gap-2 px-4 py-2 border border-gray-300 bg-white text-gray-800 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium focus:outline-none"
             >
-               <FileDown className="w-4 h-4" />
-               View Full Report (Printable)
+              Open full screen
+            </button>
+            <button
+              type="button"
+              onClick={onDownloadPdfClick}
+              className="flex items-center gap-2 px-4 py-2 bg-[#F44336] text-white rounded-lg hover:bg-[#E53935] transition-colors text-sm font-medium focus:outline-none flex-shrink-0"
+            >
+              <FileDown className="w-4 h-4" />
+              Download PDF
             </button>
           </div>
         </div>
